@@ -125,27 +125,9 @@ class HeffernanOdeModel(BaseModel):
         self.p1 = get_text_file_data(PATH_TO_COMORBIDITY_MATRIX)
         self.p2 = get_text_file_data(PATH_TO_COMORBIDITY_MATRIX)
         self.p3 = [[0] + sub[1:] for sub in self.p1]
-        self._kval = pd.read_excel(PATH_TO_DATA, sheet_name='kvalFull')     # Need to pip install openpyxl
-        self.kval = self._kval.iloc[0:59,1:4].values.tolist()
-        self.pertubations_matrices = pd.read_excel(PATH_TO_DATA, sheet_name='Perturbation Matricies')
-        self.sf1 = self.pertubations_matrices.iloc[2:18,1:17].values.tolist()
-        self.sf2 = self.pertubations_matrices.iloc[21:37,1:17].values.tolist()
-        self.sf3 = self.pertubations_matrices.iloc[40:56,1:17].values.tolist()
-        self.sf4 = self.pertubations_matrices.iloc[59:75,1:17].values.tolist()
-        self.sf5 = self.pertubations_matrices.iloc[78:94,1:17].values.tolist()
-        self.sf6 = self.pertubations_matrices.iloc[97:113,1:17].values.tolist()
-        self.of1 = self.pertubations_matrices.iloc[2:18,19:35].values.tolist()
-        self.of2 = self.pertubations_matrices.iloc[21:37,19:35].values.tolist()
-        self.wf1 = self.pertubations_matrices.iloc[2:18,37:53].values.tolist()
-        self.wf2 = self.pertubations_matrices.iloc[21:37,37:53].values.tolist()
-        self.modifier = pd.read_excel(PATH_TO_DATA, sheet_name='contactModifiersFull')
-        self.E1 = self.modifier.iloc[2:63,2:5].values.tolist()
-        self.E2 = self.modifier.iloc[2:63,6:9].values.tolist()
-        self.E3 = self.modifier.iloc[2:63,10:13].values.tolist()
-        self.E4 = self.modifier.iloc[2:63,14:17].values.tolist()
-        self.E5 = self.modifier.iloc[2:63,18:21].values.tolist()
-        self.Ebase = self.modifier.iloc[2:63,22:25].values.tolist()
-        self.contact_modifiers = [self.E1, self.E2, self.E3, self.E4, self.E5, self.Ebase]
+        self.kval = get_kvalue(PATH_TO_DATA)
+        self.pertubations_matrices = get_perturbations_matrices(PATH_TO_DATA)
+        self.contact_modifiers = get_contact_modifiers(PATH_TO_DATA)
         self._age_groups = ['0-4', '5-9', '10-14', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44', '45-49', '50-54', '55-59', '60-64', '65-69',  '70-74', '75+']
         self._pop_size = pd.read_excel(PATH_TO_DATA, sheet_name='population', skiprows=3, usecols=(2,2))
         self.pop_size = dict(zip(self._age_groups, (self._pop_size['Unnamed: 2'])))
@@ -212,3 +194,4 @@ _all_internal_params_distribs = dict()
 for i in _age_groups:
     _all_internal_params_distribs[i] = [0]
     
+pertubations_matrices = get_perturbations_matrices(PATH_TO_DATA)

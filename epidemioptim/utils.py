@@ -550,3 +550,35 @@ def get_text_file_data(path):
         tmp.append(line_list)
     file.close()
     return tmp
+
+
+def get_perturbations_matrices(path):
+    pertubations_matrices = pd.read_excel(path, sheet_name='Perturbation Matricies')
+    sf1 = pertubations_matrices.iloc[2:18,1:17].values.tolist()
+    sf2 = pertubations_matrices.iloc[21:37,1:17].values.tolist()
+    sf3 = pertubations_matrices.iloc[40:56,1:17].values.tolist()
+    sf4 = pertubations_matrices.iloc[59:75,1:17].values.tolist()
+    sf5 = pertubations_matrices.iloc[78:94,1:17].values.tolist()
+    sf6 = pertubations_matrices.iloc[97:113,1:17].values.tolist()
+    of1 = pertubations_matrices.iloc[2:18,19:35].values.tolist()
+    of2 = pertubations_matrices.iloc[21:37,19:35].values.tolist()
+    wf1 = pertubations_matrices.iloc[2:18,37:53].values.tolist()
+    wf2 = pertubations_matrices.iloc[21:37,37:53].values.tolist()
+    
+    return [sf1, sf2, sf3, sf4, sf5, sf6, of1, of2, wf1, wf2]
+
+
+def get_contact_modifiers(path):
+    modifier = pd.read_excel(path, sheet_name='contactModifiersFull')
+    E1 = modifier.iloc[2:63,2:5].values.tolist()
+    E2 = modifier.iloc[2:63,6:9].values.tolist()
+    E3 = modifier.iloc[2:63,10:13].values.tolist()
+    E4 = modifier.iloc[2:63,14:17].values.tolist()
+    E5 = modifier.iloc[2:63,18:21].values.tolist()
+    Ebase = modifier.iloc[2:63,22:25].values.tolist()
+    return [E1, E2, E3, E4, E5, Ebase]
+
+
+def get_kvalue(path):
+    kval = pd.read_excel(path, sheet_name='kvalFull')     # Need to pip install openpyxl
+    return kval.iloc[0:59,1:4].values.tolist()
