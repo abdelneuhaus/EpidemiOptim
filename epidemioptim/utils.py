@@ -673,7 +673,6 @@ def calculate_A_and_c(step, k, contact_modifiers, perturbation_matrices, transit
 
     USc = transition_matrices[0] + np.multiply(np.matrix(wf), transition_matrices[2]) + np.multiply(np.matrix(of), transition_matrices[3]) + np.multiply(np.matrix(sf), transition_matrices[1])
     B = USc.sum(axis=0)
-    print(B)
     _con = np.multiply(USc, k)
     _A = _con.sum(axis=0)
     _c = np.divide(_con, np.tile(_A, (16,1)))
