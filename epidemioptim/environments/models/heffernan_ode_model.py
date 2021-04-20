@@ -113,47 +113,6 @@ def model(y: tuple,
     dE41dt, dE42dt, dE43dt, dV11dt, dV12dt, dV13dt, dV14dt, dV21dt, dV22dt, dV23dt, dV24dt, dI2dt, dI3dt, dI4dt]
     return dydt
 
-    # S, E2, E3, E4, I, V1, V2 = y
-
-    # # For each age groups :
-    # for n in range(0, 16):
-
-    #     # Susceptible compartments
-    #     dSdt = - sum(p1)*alpha[0]*A[0]*S[0]*infect + omega[1]*S[1] - sigma*rho*S[0] + omega[1]*V1[0]
-    #     dSdt = - sum(p2)*alpha[1]*A[1]*S[1]*infect + omega[2]*S[2] - omega[1]*S[1] - sigma*rho*S[1] + gamma[1]*I[1] + omega[2]*V1[1]
-    #     dSdt = - (p3[1]+p3[2])*alpha[2]*A[2]*S[2]*infect + omega[3]*S[3] - omega[2]*S[2] - sigma*rho*S[2] + gamma[2]*I[2] + omega[3]*(V1[2]+V1[3]+sum(V2))
-    #     dSdt = - omega[3]*S[3] - sigma*rho*S[3] + gamma[3]*I[3]
-        
-    #     # Vaccinated compartments
-    #     dV1dt = sigma*rho*S[0] - sigma*rho*V1[0] - sum(p2)*alpha[1]*A[1]*V1[0]*infect - omega[1]*V1[0]
-    #     dV1dt = sigma*rho*S[1] - sigma*rho*V1[1] - (p3[1]+p3[2])*alpha[2]*A[2]*V1[1]*infect - omega[2]*V1[1]
-    #     dV1dt = sigma*rho*S[2] - sigma*rho*V1[2] - omega[3]*V1[2]
-    #     dV1dt = sigma*rho*S[3] - sigma*rho*V1[3] - omega[3]*V1[3]
-
-    #     dV2dt = sigma*rho*V1[0] - omega[3]*V2[0]
-    #     dV2dt = sigma*rho*V1[1] - omega[3]*V2[1]
-    #     dV2dt = sigma*rho*V1[2] - omega[3]*V2[2]
-    #     dV2dt = sigma*rho*V1[3] - omega[3]*V2[3]
-
-    #     # Exposed compartments
-    #     dE2dt = p1[0]*alpha[0]*A[0]*S[0]*infect + p2[0]*alpha[1]*A[1]*S[1]*infect + p2[0]*alpha[1]*A[1]*V1[0]*infect - kappa[1]*E2[1]
-    #     dE2dt = p1[1]*alpha[0]*A[0]*S[0]*infect + p2[1]*alpha[1]*A[1]*S[1]*infect + p3[1]*alpha[2]*A[2]*S[2]*infect + p2[1]*alpha[1]*A[1]*V1[0]*infect + p3[1]*alpha[2]*A[2]*V1[1]*infect - kappa[2]*E2[2]
-    #     dE2dt = p1[2]*alpha[0]*A[0]*S[0]*infect + p2[2]*alpha[1]*A[1]*S[1]*infect + p3[2]*alpha[2]*A[2]*S[2]*infect + p2[2]*alpha[1]*A[1]*V1[0]*infect + p3[2]*alpha[2]*A[2]*V1[1]*infect - kappa[3]*E2[3]
-
-    #     dE3dt = kappa[1]*E2[1] - kappa[1]*E3[1]
-    #     dE3dt = kappa[2]*E2[2] - kappa[2]*E3[2]
-    #     dE3dt = kappa[3]*E2[3] - kappa[3]*E3[3]
-
-    #     dE4dt = kappa[1]*E3[1] - kappa[1]*E4[1]
-    #     dE4dt = kappa[2]*E3[2] - kappa[2]*E4[2]
-    #     dE4dt = kappa[3]*E3[3] - kappa[3]*E4[3]            
-
-    #     # Infected compartments
-    #     dIdt = kappa[1]*E4[1] - delta[1]*I[1] - gamma[1]*I[1]
-    #     dIdt = kappa[2]*E4[2] - delta[2]*I[2] - gamma[2]*I[2]
-    #     dIdt = kappa[3]*E4[3] - delta[3]*I[3] - gamma[3]*I[3] 
-
-    # return dSdt, dE2dt, dE3dt, dE4dt, dV1dt, dV2dt, dIdt
 
 
 class HeffernanOdeModel(BaseModel):
@@ -161,10 +120,10 @@ class HeffernanOdeModel(BaseModel):
                 stochastic=False,
                 range_delay=None
                 ):
-        self._age_groups = [['0-4'], ['5-9'], ['10-14'], ['15-19'], ['20-24'], ['25-29'], ['30-34'], ['35-39'], ['40-44'], ['45-49'], ['50-54'], ['55-59'], ['60-64'], ['65-69'],  ['70-74'], ['75+']]
+        self._age_groups = ['0-4', '5-9', '10-14', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44', '45-49', '50-54', '55-59', '60-64', '65-69',  '70-74', '75+']
         self.common_parameters = {"alpha": [1, 2/3, 1/3, 0], "beta": [0.08, 0.04, 0.08, 0.008], "gamma": [0, 0.2, 0.1, 1/15], "delta": [0, 0, 0, 0.0001], "omega": [0, 1/365, 1/365, 1/365], "kappa": [0, 1/1.5, 1/1.5, 1/1.5], "rho": 0.8, "N": 16}
         self._pop_size = pd.read_excel(PATH_TO_DATA, sheet_name='population', skiprows=3, usecols=(2,2))
-        self.pop_size = None
-
-print( pd.read_excel(PATH_TO_DATA, sheet_name='population', skiprows=3, usecols=(2,2)))
+        self.pop_size = {idx: value for (idx,value) in enumerate(set(self._pop_size['Unnamed: 2']))}
+_pop_size = pd.read_excel(PATH_TO_DATA, sheet_name='population', skiprows=3, usecols=(2,2))
+print({idx: value for (idx,value) in enumerate(set(_pop_size['Unnamed: 2']))})
 
