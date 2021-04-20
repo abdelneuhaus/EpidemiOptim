@@ -136,11 +136,16 @@ class HeffernanOdeModel(BaseModel):
         self.school = get_text_file_data(PATH_TO_SCHOOL_MATRIX)
         self.perturbations_matrices = get_perturbations_matrices(PATH_TO_DATA)
         self.contact_modifiers = get_contact_modifiers(PATH_TO_DATA)
+        self.vaccination_coverage = get_coverage(PATH_TO_DATA)
+        self.active_vaccination = vaccination_active(PATH_TO_DATA)
         self.transition_matrices = transition_matrices(self.pop_size, self.H, self.S, self.W, self.O)
         self._age_groups = ['0-4', '5-9', '10-14', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44', '45-49', '50-54', '55-59', '60-64', '65-69',  '70-74', '75+']
         self._pop_size = pd.read_excel(PATH_TO_DATA, sheet_name='population', skiprows=3, usecols=(2,2))
         self.pop_size = dict(zip(self._age_groups, (self._pop_size['Unnamed: 2'])))
         self.parameters = ['alpha', 'beta', 'gamma', 'delta', 'omega', 'kappa', 'rho', 'sigma', 'p1', 'p2', 'p3', 'A', 'infect']
+        self.step = [0, 71, 73, 76, 153, 173, 185, 201, 239, 244, 290, 295, 303, 305, 349, 353, 369, 370, 377, 381, 384, 391, 398, 402, 
+                     404, 405, 409, 412, 418, 419, 425, 426, 431, 433, 440, 447, 454, 459, 461, 465, 468, 472 , 475, 481, 482, 488, 
+                     489, 494, 496, 497, 501, 503, 510, 517, 524, 531, 552, 592, 609, 731]
         assert age_group in self._age_groups, 'age group should be one of ' + str(self._regions)
 
         self.age_group = age_group
@@ -184,14 +189,32 @@ class HeffernanOdeModel(BaseModel):
                                                          p3=self.p3[grp],
                                                          A=calculate_A_and_c(0, 1, self.contact_modifiers, self.perturbations_matrices, self.transition_matrices, 16)[0],
                                                          c=calculate_A_and_c(0, 1, self.contact_modifiers, self.perturbations_matrices, self.transition_matrices, 16)[1],
-                                                         sigma=1e-20
+                                                         sigma=sigma_calculation(0, 0, self.vaccination_coverage)
                                                         )
-            self._all_initial_state_distribs[i] = dict(E0=LogNormalDist(params=mv2musig(self.fitted_params['initE_mean'][i], self.fitted_cov['initE_pop'][label2ind['initE_pop']]),
-                                                                        stochastic=self.stochastic),
-                                                       I0=DiracDist(params=self.fitted_params['I0_kalman_mean'][i], stochastic=self.stochastic),
-                                                       R0=DiracDist(params=0, stochastic=self.stochastic),
-                                                       A0=DiracDist(params=1, stochastic=self.stochastic),  # is updated below
-                                                       H0=DiracDist(params=self.fitted_params['H0_kalman_mean'][i], stochastic=self.stochastic)
+                                                        
+            self._all_initial_state_distribs[i] = dict(S20=DiracDist(params=0, stochastic=self.stochastic),
+                                                       S30=DiracDist(params=0, stochastic=self.stochastic),
+                                                       S40=DiracDist(params=0, stochastic=self.stochastic),
+                                                       E210=DiracDist(params=0, stochastic=self.stochastic),
+                                                       E220=DiracDist(params=0, stochastic=self.stochastic),
+                                                       E230=DiracDist(params=0, stochastic=self.stochastic),
+                                                       E310=DiracDist(params=0, stochastic=self.stochastic),
+                                                       E320=DiracDist(params=0, stochastic=self.stochastic),
+                                                       E330=DiracDist(params=0, stochastic=self.stochastic),
+                                                       E410=DiracDist(params=0, stochastic=self.stochastic),
+                                                       E420=DiracDist(params=0, stochastic=self.stochastic),
+                                                       E430=DiracDist(params=0, stochastic=self.stochastic),
+                                                       V110=DiracDist(params=0, stochastic=self.stochastic),
+                                                       V120=DiracDist(params=0, stochastic=self.stochastic),
+                                                       V130=DiracDist(params=0, stochastic=self.stochastic),
+                                                       V140=DiracDist(params=0, stochastic=self.stochastic),
+                                                       V210=DiracDist(params=0, stochastic=self.stochastic),
+                                                       V220=DiracDist(params=0, stochastic=self.stochastic),
+                                                       V230=DiracDist(params=0, stochastic=self.stochastic),
+                                                       V240=DiracDist(params=0, stochastic=self.stochastic),
+                                                       I20=DiracDist(params=10/6, stochastic=self.stochastic),
+                                                       I30=DiracDist(params=1/6, stochastic=self.stochastic),
+                                                       I40=DiracDist(params=0, stochastic=self.stochastic)
                                                        )
             grp += 1                                           
 

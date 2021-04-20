@@ -292,7 +292,6 @@ class DiracDist(BaseDist):
         samples = np.array([self.params] * n)
         return float(samples) if n == 1 else samples
 
-
 class DiscreteDist(BaseDist):
     def __init__(self, params, stochastic):
         """
@@ -689,3 +688,13 @@ def sigma_calculation(step, boolVaccination, coverage):
     if (boolVaccination[step] == 1):
         return coverage[step]/100*(1/12)/(1-coverage[step]/100)
     return 1e-20
+
+
+def get_coverage(path):
+    _coverage = pd.read_excel(path, sheet_name='coverage', skiprows=0, usecols=(1,1)).values.tolist()
+    return [x for y in _coverage for x in y]
+
+
+def vaccination_active(path):
+    _vaccineFull = pd.read_excel(path, sheet_name='vaccinateFull', skiprows=0, usecols=(1,1)).values.tolist()
+    return [x for y in _vaccineFull for x in y]
