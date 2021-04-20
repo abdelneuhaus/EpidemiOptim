@@ -19,14 +19,15 @@ def vaccination_model(y: tuple,
           p1: tuple, 
           p2: tuple, 
           p3: tuple, 
-          alpha: tuple, 
+          alpha: tuple,
+          beta: tuple, 
           kappa: tuple, 
           gamma: tuple, 
           rho: float, 
           omega: tuple, 
           delta: tuple, 
           A: tuple, 
-          infect: tuple, 
+          c: tuple, 
           sigma: float):
     """
     Parameters
@@ -62,8 +63,9 @@ def vaccination_model(y: tuple,
        Disease-induced mortality rate of infected individuals from Ijm (j immunity status, m age group).
     A: tuple
        Per capita activity counts of individuals in age group n
-    infect: tuple
-       Force of infection for an age group. Equals to A*a*lambda with lambda = sum(c)*(sum(beta*I)/sum(Nt)) at a timestep t
+    c: tuple
+       Mixing matrix between individuals in age group a and age groupe n, modified given mitigation, strategy, PPE, 
+       social distancing, hand washing compliance (k-value)
     sigma: float
        Vaccination rate.
 
@@ -74,6 +76,8 @@ def vaccination_model(y: tuple,
     """
 
     S1, S2, S3, S4, E21, E22, E23, E31, E32, E33, E41, E42, E43, V11, V12, V13, V14, V21, V22, V23, V24, I2, I3, I4 = y
+    T = S1 + S2 + S3 + S4 + E21 + E22 + E23 + E31 + E32 + E33 + E41 + E42 + E43 + V11 + V12 + V13 + V14 + V21 + V22 + V23 + V24 + I2 + I3 + I4
+    infect = sum(c)*((beta[1]+beta[2]+beta[3])*(I2+I3+I4)/T)
 
     # Susceptible compartments
     dS1dt = - sum(p1)*alpha[0]*A[0]*S1*infect + omega[1]*S2 - sigma*rho*S1 + omega[1]*V11
@@ -126,8 +130,13 @@ class HeffernanOdeModel(BaseModel):
         self.p2 = get_text_file_data(PATH_TO_COMORBIDITY_MATRIX)
         self.p3 = [[0] + sub[1:] for sub in self.p1]
         self.kval = get_kvalue(PATH_TO_DATA)
-        self.pertubations_matrices = get_perturbations_matrices(PATH_TO_DATA)
+        self.work = get_text_file_data(PATH_TO_WORK_MATRIX)
+        self.other = get_text_file_data(PATH_TO_OTHER_MATRIX)
+        self.home = get_text_file_data(PATH_TO_HOME_MATRIX)
+        self.school = get_text_file_data(PATH_TO_SCHOOL_MATRIX)
+        self.perturbations_matrices = get_perturbations_matrices(PATH_TO_DATA)
         self.contact_modifiers = get_contact_modifiers(PATH_TO_DATA)
+        self.transition_matrices = transition_matrices(self.pop_size, self.H, self.S, self.W, self.O)
         self._age_groups = ['0-4', '5-9', '10-14', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44', '45-49', '50-54', '55-59', '60-64', '65-69',  '70-74', '75+']
         self._pop_size = pd.read_excel(PATH_TO_DATA, sheet_name='population', skiprows=3, usecols=(2,2))
         self.pop_size = dict(zip(self._age_groups, (self._pop_size['Unnamed: 2'])))
@@ -173,8 +182,9 @@ class HeffernanOdeModel(BaseModel):
                                                          p1=self.p1[grp],
                                                          p2=self.p2[grp],
                                                          p3=self.p3[grp],
-                                                         A=None,
-                                                         infect=None
+                                                         A=calculate_A_and_c(0, 1, self.contact_modifiers, self.perturbations_matrices, self.transition_matrices, 16)[0],
+                                                         c=calculate_A_and_c(0, 1, self.contact_modifiers, self.perturbations_matrices, self.transition_matrices, 16)[1],
+                                                         sigma=1e-20
                                                         )
             self._all_initial_state_distribs[i] = dict(E0=LogNormalDist(params=mv2musig(self.fitted_params['initE_mean'][i], self.fitted_cov['initE_pop'][label2ind['initE_pop']]),
                                                                         stochastic=self.stochastic),
@@ -188,10 +198,22 @@ class HeffernanOdeModel(BaseModel):
 
 parameters = ['alpha', 'beta', 'gamma', 'delta', 'omega', 'kappa', 'rho', 'sigma', 'p1', 'p2', 'p3', 'A', 'infect']
 _age_groups = ['0-4', '5-9', '10-14', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44', '45-49', '50-54', '55-59', '60-64', '65-69',  '70-74', '75+']
-
+_pop_size = pd.read_excel(PATH_TO_DATA, sheet_name='population', skiprows=3, usecols=(2,2))
 label2ind = dict(zip(list(parameters), np.arange(len(_age_groups))))
 _all_internal_params_distribs = dict()
 for i in _age_groups:
     _all_internal_params_distribs[i] = [0]
     
 pertubations_matrices = get_perturbations_matrices(PATH_TO_DATA)
+pop_size = dict(zip(_age_groups, (_pop_size['Unnamed: 2'])))
+
+contact_modifiers = get_contact_modifiers(PATH_TO_DATA)
+perturbations_matrices = get_perturbations_matrices(PATH_TO_DATA)
+W = get_text_file_data(PATH_TO_WORK_MATRIX) # work
+O = get_text_file_data(PATH_TO_OTHER_MATRIX) # other places
+H = get_text_file_data(PATH_TO_HOME_MATRIX) # home
+S = get_text_file_data(PATH_TO_SCHOOL_MATRIX)
+transition_matrices = transition_matrices(pop_size, H, S, W, O)
+
+A = calculate_A_and_c(0, 1, contact_modifiers, perturbations_matrices, transition_matrices, 16)[0]
+print(A)

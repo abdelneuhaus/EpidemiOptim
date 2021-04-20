@@ -552,6 +552,31 @@ def get_text_file_data(path):
     return tmp
 
 
+def duplicate_data(data, nbr):
+    """
+    Duplicate a single list (data) into identical sublists a given number of times (nbr)
+    """
+    out = []
+    for i in range (nbr):
+        out.append(data)
+    return out
+
+
+
+def create_list(value, sublist_nb, sublist_size):
+    """
+    Create a list of len sublist_size, filled with sublist_nb sublists. Each sublist is filled with the value value
+    """
+    out = []
+    tmp = []
+    for i in range(sublist_nb):
+        for j in range(sublist_size):
+            tmp.append(value)
+        out.append(tmp)
+        tmp = []
+    return out
+
+
 def get_perturbations_matrices(path):
     pertubations_matrices = pd.read_excel(path, sheet_name='Perturbation Matricies')
     sf1 = pertubations_matrices.iloc[2:18,1:17].values.tolist()
@@ -582,3 +607,85 @@ def get_contact_modifiers(path):
 def get_kvalue(path):
     kval = pd.read_excel(path, sheet_name='kvalFull')     # Need to pip install openpyxl
     return kval.iloc[0:59,1:4].values.tolist()
+
+
+
+def transition_matrices(group_population, H, S, W, O):
+    pop_size = [group_population[x] for x in group_population.keys()]
+    population = np.matrix(duplicate_data(pop_size, 16))
+    H1 = np.multiply(np.matrix(H).T,population)
+    S1 = np.multiply(np.matrix(S).T,population)
+    W1 = np.multiply(np.matrix(W).T,population)
+    O1 = np.multiply(np.matrix(O).T,population)
+
+    Hmat1 = np.multiply(np.matrix(H1), np.matrix(H1).T)
+    Smat1 = np.multiply(np.matrix(S1), np.matrix(S1).T)
+    Wmat1 = np.multiply(np.matrix(W1), np.matrix(W1).T)
+    Omat1 = np.multiply(np.matrix(O1), np.matrix(O1).T)
+
+    Hmat = np.divide(np.sqrt(Hmat1), population)
+    Smat = np.divide(np.sqrt(Smat1), population)
+    Wmat = np.divide(np.sqrt(Wmat1), population)
+    Omat = np.divide(np.sqrt(Omat1), population)
+
+    return [Hmat, Smat, Wmat, Omat]
+
+
+def calculate_A_and_c(step, k, contact_modifiers, perturbation_matrices, transition_matrices, N=16):
+    """
+    When called, change the value of each contact matrices.
+    Called when there is a change in NPI
+
+    k: kval for the given time, compliance index
+    
+    Return
+    ------
+    A: per capita activity counts of individuals in age group n
+    c: mixing matrix between individuals of two groups, modified given k
+    con:
+    """
+
+    sf = create_list(1, N, N)
+    wf = create_list(1, N, N)
+    of = create_list(1, N, N)
+    phase = contact_modifiers[0]
+    if (phase[step][0] == 1):
+        sf = perturbation_matrices[0]
+    elif (phase[step][0] == 2):
+        sf = perturbation_matrices[1]
+    elif (phase[step][0] == 3):
+        sf = perturbation_matrices[2]
+    elif (phase[step][0] == 4):
+        sf = perturbation_matrices[3]
+    elif (phase[step][0] == 5):
+        sf = perturbation_matrices[4]
+    elif (phase[step][0] == 6):
+        sf = perturbation_matrices[5]
+
+    if (phase[step][1] == 1):
+        of = perturbation_matrices[6]
+    elif (phase[step][1] == 2):
+        of = perturbation_matrices[7]
+
+    if (phase[step][2] == 1):
+        wf = perturbation_matrices[8]
+    elif (phase[step][2] == 2):
+        wf = perturbation_matrices[9]
+
+    USc = transition_matrices[0] + np.multiply(np.matrix(wf), transition_matrices[2]) + np.multiply(np.matrix(of), transition_matrices[3]) + np.multiply(np.matrix(sf), transition_matrices[1])
+    B = USc.sum(axis=0)
+    print(B)
+    _con = np.multiply(USc, k)
+    _A = _con.sum(axis=0)
+    _c = np.divide(_con, np.tile(_A, (16,1)))
+    _A = np.tile(_A, (4,1))
+    A, c = _A.T.tolist(), _c.tolist()
+    
+    return [A, c]
+
+
+# Vaccination rate
+def sigma_calculation(step, boolVaccination, coverage):
+    if (boolVaccination[step] == 1):
+        return coverage[step]/100*(1/12)/(1-coverage[step]/100)
+    return 1e-20

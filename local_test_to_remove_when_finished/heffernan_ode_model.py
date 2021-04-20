@@ -76,7 +76,7 @@ final = [] # stock odeint output at each run
 for i in range(0, 400):
     if (i == timeBreaks[step]):     # if day i is equals to a day where there is a change in NPI
         k = get_k_value(0, step)    # update k-value
-        con, A, c = contactModifiersComputation(k)  # update contact matrices
+        A, c = contactModifiersComputation(k)  # update contact matrices
         Nt = y0[0] + y0[1] + y0[2] + y0[3] + y0[4] + y0[5] + y0[6]  # calculation of total population 
         Ntt = sum(Nt)
         Ntt = sum(Ntt.tolist())     # total population

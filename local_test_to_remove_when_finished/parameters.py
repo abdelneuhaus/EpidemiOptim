@@ -46,6 +46,7 @@ sf = create_list(1, N, N)
 wf = create_list(1, N, N)
 of = create_list(1, N, N)
 
+
 perMat = pd.read_excel(r'./data/ScenarioPlanFranceOne.xlsx', sheet_name='Perturbation Matricies')
 sf1 = perMat.iloc[2:18,1:17].values.tolist()
 sf2 = perMat.iloc[21:37,1:17].values.tolist()
@@ -105,7 +106,7 @@ def contactModifiersComputation(k):
     sf = create_list(1, N, N)
     wf = create_list(1, N, N)
     of = create_list(1, N, N)
-    phase = contactModifiers[5]
+    phase = contactModifiers[0]
     for i in range(len(phase)):
         if (phase[i][0] == 1):
             sf = sf1
