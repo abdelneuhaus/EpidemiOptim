@@ -3,6 +3,7 @@ from odeintw import odeintw
 from epidemioptim.environments.models.base_model import BaseModel
 from epidemioptim.utils import *
 
+
 PATH_TO_DATA = get_repo_path() + '/data/jane_model_data/ScenarioPlanFranceOne.xlsx'
 PATH_TO_HOME_MATRIX = get_repo_path() + '/data/jane_model_data/contactHome.txt'
 PATH_TO_SCHOOL_MATRIX = get_repo_path() + '/data/jane_model_data/contactSchool.txt'
@@ -73,43 +74,40 @@ def model(y: tuple,
 
     S1, S2, S3, S4, E21, E22, E23, E31, E32, E33, E41, E42, E43, V11, V12, V13, V14, V21, V22, V23, V24, I2, I3, I4 = y
 
-    # For each age groups :
-    for n in range(0, 16):
+    # Susceptible compartments
+    dS1dt = - sum(p1)*alpha[0]*A[0]*S1*infect + omega[1]*S2 - sigma*rho*S1 + omega[1]*V11
+    dS2dt = - sum(p2)*alpha[1]*A[1]*S2*infect + omega[2]*S3 - omega[1]*S2 - sigma*rho*S2 + gamma[1]*I2 + omega[2]*V12
+    dS3dt = - (p3[1]+p3[2])*alpha[2]*A[2]*S3*infect + omega[3]*S4 - omega[2]*S3 - sigma*rho*S3 + gamma[2]*I3 + omega[3]*(V13+V14+V21+V22+V23+V24)
+    dS4dt = - omega[3]*S4 - sigma*rho*S4 + gamma[3]*I4
+    
+    # Vaccinated compartments
+    dV11dt = sigma*rho*S1 - sigma*rho*V11 - sum(p2)*alpha[1]*A[1]*V11*infect - omega[1]*V11
+    dV12dt = sigma*rho*S2 - sigma*rho*V12 - (p3[1]+p3[2])*alpha[2]*A[2]*V12*infect - omega[2]*V12
+    dV13dt = sigma*rho*S3 - sigma*rho*V13 - omega[3]*V13
+    dV14dt = sigma*rho*S4 - sigma*rho*V14 - omega[3]*V14
 
-        # Susceptible compartments
-        dS1dt = - sum(p1[n])*alpha[n][0]*A[n][0]*S1[n]*infect[n] + omega[n][1]*S2[n] - sigma*rho[0]*S1[n] + omega[n][1]*V11[n]
-        dS2dt = - sum(p2[n])*alpha[n][1]*A[n][1]*S2[n]*infect[n] + omega[n][2]*S3[n] - omega[n][1]*S2[n] - sigma*rho[0]*S2[n] + gamma[n][1]*I2[n] + omega[n][2]*V12[n]
-        dS3dt = - (p3[n][1]+p3[n][2])*alpha[n][2]*A[n][2]*S3[n]*infect[n] + omega[n][3]*S4[n] - omega[n][2]*S3[n] - sigma*rho[0]*S3[n] + gamma[n][2]*I3[n] + omega[n][3]*(V13[n]+V14[n]+V21[n]+V22[n]+V23[n]+V24[n])
-        dS4dt = - omega[n][3]*S4[n] - sigma*rho[0]*S4[n] + gamma[n][3]*I4[n]
-        
-        # Vaccinated compartments
-        dV11dt = sigma*rho[0]*S1[n] - sigma*rho[0]*V11[n] - sum(p2[n])*alpha[n][1]*A[n][1]*V11[n]*infect[n] - omega[n][1]*V11[n]
-        dV12dt = sigma*rho[0]*S2[n] - sigma*rho[0]*V12[n] - (p3[n][1]+p3[n][2])*alpha[n][2]*A[n][2]*V12[n]*infect[n] - omega[n][2]*V12[n]
-        dV13dt = sigma*rho[0]*S3[n] - sigma*rho[0]*V13[n] - omega[n][3]*V13[n]
-        dV14dt = sigma*rho[0]*S4[n] - sigma*rho[0]*V14[n] - omega[n][3]*V14[n]
+    dV21dt = sigma*rho*V11 - omega[3]*V21
+    dV22dt = sigma*rho*V12 - omega[3]*V22
+    dV23dt = sigma*rho*V13 - omega[3]*V23
+    dV24dt = sigma*rho*V14 - omega[3]*V24
 
-        dV21dt = sigma*rho[0]*V11[n] - omega[n][3]*V21[n]
-        dV22dt = sigma*rho[0]*V12[n] - omega[n][3]*V22[n]
-        dV23dt = sigma*rho[0]*V13[n] - omega[n][3]*V23[n]
-        dV24dt = sigma*rho[0]*V14[n] - omega[n][3]*V24[n]
+    # Exposed compartments
+    dE21dt = p1[0]*alpha[0]*A[0]*S1*infect + p2[0]*alpha[1]*A[1]*S2*infect + p2[0]*alpha[1]*A[1]*V11*infect - kappa[1]*E21
+    dE22dt = p1[1]*alpha[0]*A[0]*S1*infect + p2[1]*alpha[1]*A[1]*S2*infect + p3[1]*alpha[2]*A[2]*S3*infect + p2[1]*alpha[1]*A[1]*V11*infect + p3[1]*alpha[2]*A[2]*V12*infect - kappa[2]*E22
+    dE23dt = p1[2]*alpha[0]*A[0]*S1*infect + p2[2]*alpha[1]*A[1]*S2*infect + p3[2]*alpha[2]*A[2]*S3*infect + p2[2]*alpha[1]*A[1]*V11*infect + p3[2]*alpha[2]*A[2]*V12*infect - kappa[3]*E23
 
-        # Exposed compartments
-        dE21dt = p1[n][0]*alpha[n][0]*A[n][0]*S1[n]*infect[n] + p2[n][0]*alpha[n][1]*A[n][1]*S2[n]*infect[n] + p2[n][0]*alpha[n][1]*A[n][1]*V11[n]*infect[n] - kappa[n][1]*E21[n]
-        dE22dt = p1[n][1]*alpha[n][0]*A[n][0]*S1[n]*infect[n] + p2[n][1]*alpha[n][1]*A[n][1]*S2[n]*infect[n] + p3[n][1]*alpha[n][2]*A[n][2]*S3[n]*infect[n] + p2[n][1]*alpha[n][1]*A[n][1]*V11[n]*infect[n] + p3[n][1]*alpha[n][2]*A[n][2]*V12[n]*infect[n] - kappa[n][2]*E22[n]
-        dE23dt = p1[n][2]*alpha[n][0]*A[n][0]*S1[n]*infect[n] + p2[n][2]*alpha[n][1]*A[n][1]*S2[n]*infect[n] + p3[n][2]*alpha[n][2]*A[n][2]*S3[n]*infect[n] + p2[n][2]*alpha[n][1]*A[n][1]*V11[n]*infect[n] + p3[n][2]*alpha[n][2]*A[n][2]*V12[n]*infect[n] - kappa[n][3]*E23[n]
+    dE31dt = kappa[1]*E21 - kappa[1]*E31
+    dE32dt = kappa[2]*E22 - kappa[2]*E32
+    dE33dt = kappa[3]*E23 - kappa[3]*E33
 
-        dE31dt = kappa[n][1]*E21[n] - kappa[n][1]*E31[n]
-        dE32dt = kappa[n][2]*E22[n] - kappa[n][2]*E32[n]
-        dE33dt = kappa[n][3]*E23[n] - kappa[n][3]*E33[n]
+    dE41dt = kappa[1]*E31 - kappa[1]*E41
+    dE42dt = kappa[2]*E32 - kappa[2]*E42
+    dE43dt = kappa[3]*E33 - kappa[3]*E43            
 
-        dE41dt = kappa[n][1]*E31[n] - kappa[n][1]*E41[n]
-        dE42dt = kappa[n][2]*E32[n] - kappa[n][2]*E42[n]
-        dE43dt = kappa[n][3]*E33[n] - kappa[n][3]*E43[n]            
-
-        # Infected compartments
-        dI2dt = kappa[n][1]*E41[n] - delta[n][1]*I2[n] - gamma[n][1]*I2[n]
-        dI3dt = kappa[n][2]*E42[n] - delta[n][2]*I3[n] - gamma[n][2]*I3[n]
-        dI4dt = kappa[n][3]*E43[n] - delta[n][3]*I4[n] - gamma[n][3]*I4[n] 
+    # Infected compartments
+    dI2dt = kappa[1]*E41 - delta[1]*I2 - gamma[1]*I2
+    dI3dt = kappa[2]*E42 - delta[2]*I3 - gamma[2]*I3
+    dI4dt = kappa[3]*E43 - delta[3]*I4 - gamma[3]*I4 
 
     dydt = [dS1dt, dS2dt, dS3dt, dS4dt, dE21dt, dE22dt, dE23dt, dE31dt, dE32dt, dE33dt, 
     dE41dt, dE42dt, dE43dt, dV11dt, dV12dt, dV13dt, dV14dt, dV21dt, dV22dt, dV23dt, dV24dt, dI2dt, dI3dt, dI4dt]
@@ -121,39 +119,52 @@ def model(y: tuple,
     # for n in range(0, 16):
 
     #     # Susceptible compartments
-    #     dSdt[n] = - sum(p1[n])*alpha[n][0]*A[n][0]*S[n][0]*infect[n] + omega[n][1]*S[n][1] - sigma*rho[0]*S[n][0] + omega[n][1]*V1[n][0]
-    #     dSdt[n] = - sum(p2[n])*alpha[n][1]*A[n][1]*S[n][1]*infect[n] + omega[n][2]*S[n][2] - omega[n][1]*S[n][1] - sigma*rho[0]*S[n][1] + gamma[n][1]*I[n][1] + omega[n][2]*V1[n][1]
-    #     dSdt[n] = - (p3[n][1]+p3[n][2])*alpha[n][2]*A[n][2]*S[n][2]*infect[n] + omega[n][3]*S[n][3] - omega[n][2]*S[n][2] - sigma*rho[0]*S[n][2] + gamma[n][2]*I[n][2] + omega[n][3]*(V1[n][2]+V1[n][3]+sum(V2[n]))
-    #     dSdt[n] = - omega[n][3]*S[n][3] - sigma*rho[0]*S[n][3] + gamma[n][3]*I[n][3]
+    #     dSdt = - sum(p1)*alpha[0]*A[0]*S[0]*infect + omega[1]*S[1] - sigma*rho*S[0] + omega[1]*V1[0]
+    #     dSdt = - sum(p2)*alpha[1]*A[1]*S[1]*infect + omega[2]*S[2] - omega[1]*S[1] - sigma*rho*S[1] + gamma[1]*I[1] + omega[2]*V1[1]
+    #     dSdt = - (p3[1]+p3[2])*alpha[2]*A[2]*S[2]*infect + omega[3]*S[3] - omega[2]*S[2] - sigma*rho*S[2] + gamma[2]*I[2] + omega[3]*(V1[2]+V1[3]+sum(V2))
+    #     dSdt = - omega[3]*S[3] - sigma*rho*S[3] + gamma[3]*I[3]
         
     #     # Vaccinated compartments
-    #     dV1dt[n] = sigma*rho[0]*S[n][0] - sigma*rho[0]*V1[n][0] - sum(p2[n])*alpha[n][1]*A[n][1]*V1[n][0]*infect[n] - omega[n][1]*V1[n][0]
-    #     dV1dt[n] = sigma*rho[0]*S[n][1] - sigma*rho[0]*V1[n][1] - (p3[n][1]+p3[n][2])*alpha[n][2]*A[n][2]*V1[n][1]*infect[n] - omega[n][2]*V1[n][1]
-    #     dV1dt[n] = sigma*rho[0]*S[n][2] - sigma*rho[0]*V1[n][2] - omega[n][3]*V1[n][2]
-    #     dV1dt[n] = sigma*rho[0]*S[n][3] - sigma*rho[0]*V1[n][3] - omega[n][3]*V1[n][3]
+    #     dV1dt = sigma*rho*S[0] - sigma*rho*V1[0] - sum(p2)*alpha[1]*A[1]*V1[0]*infect - omega[1]*V1[0]
+    #     dV1dt = sigma*rho*S[1] - sigma*rho*V1[1] - (p3[1]+p3[2])*alpha[2]*A[2]*V1[1]*infect - omega[2]*V1[1]
+    #     dV1dt = sigma*rho*S[2] - sigma*rho*V1[2] - omega[3]*V1[2]
+    #     dV1dt = sigma*rho*S[3] - sigma*rho*V1[3] - omega[3]*V1[3]
 
-    #     dV2dt[n] = sigma*rho[0]*V1[n][0] - omega[n][3]*V2[n][0]
-    #     dV2dt[n] = sigma*rho[0]*V1[n][1] - omega[n][3]*V2[n][1]
-    #     dV2dt[n] = sigma*rho[0]*V1[n][2] - omega[n][3]*V2[n][2]
-    #     dV2dt[n] = sigma*rho[0]*V1[n][3] - omega[n][3]*V2[n][3]
+    #     dV2dt = sigma*rho*V1[0] - omega[3]*V2[0]
+    #     dV2dt = sigma*rho*V1[1] - omega[3]*V2[1]
+    #     dV2dt = sigma*rho*V1[2] - omega[3]*V2[2]
+    #     dV2dt = sigma*rho*V1[3] - omega[3]*V2[3]
 
     #     # Exposed compartments
-    #     dE2dt[n] = p1[n][0]*alpha[n][0]*A[n][0]*S[n][0]*infect[n] + p2[n][0]*alpha[n][1]*A[n][1]*S[n][1]*infect[n] + p2[n][0]*alpha[n][1]*A[n][1]*V1[n][0]*infect[n] - kappa[n][1]*E2[n][1]
-    #     dE2dt[n] = p1[n][1]*alpha[n][0]*A[n][0]*S[n][0]*infect[n] + p2[n][1]*alpha[n][1]*A[n][1]*S[n][1]*infect[n] + p3[n][1]*alpha[n][2]*A[n][2]*S[n][2]*infect[n] + p2[n][1]*alpha[n][1]*A[n][1]*V1[n][0]*infect[n] + p3[n][1]*alpha[n][2]*A[n][2]*V1[n][1]*infect[n] - kappa[n][2]*E2[n][2]
-    #     dE2dt[n] = p1[n][2]*alpha[n][0]*A[n][0]*S[n][0]*infect[n] + p2[n][2]*alpha[n][1]*A[n][1]*S[n][1]*infect[n] + p3[n][2]*alpha[n][2]*A[n][2]*S[n][2]*infect[n] + p2[n][2]*alpha[n][1]*A[n][1]*V1[n][0]*infect[n] + p3[n][2]*alpha[n][2]*A[n][2]*V1[n][1]*infect[n] - kappa[n][3]*E2[n][3]
+    #     dE2dt = p1[0]*alpha[0]*A[0]*S[0]*infect + p2[0]*alpha[1]*A[1]*S[1]*infect + p2[0]*alpha[1]*A[1]*V1[0]*infect - kappa[1]*E2[1]
+    #     dE2dt = p1[1]*alpha[0]*A[0]*S[0]*infect + p2[1]*alpha[1]*A[1]*S[1]*infect + p3[1]*alpha[2]*A[2]*S[2]*infect + p2[1]*alpha[1]*A[1]*V1[0]*infect + p3[1]*alpha[2]*A[2]*V1[1]*infect - kappa[2]*E2[2]
+    #     dE2dt = p1[2]*alpha[0]*A[0]*S[0]*infect + p2[2]*alpha[1]*A[1]*S[1]*infect + p3[2]*alpha[2]*A[2]*S[2]*infect + p2[2]*alpha[1]*A[1]*V1[0]*infect + p3[2]*alpha[2]*A[2]*V1[1]*infect - kappa[3]*E2[3]
 
-    #     dE3dt[n] = kappa[n][1]*E2[n][1] - kappa[n][1]*E3[n][1]
-    #     dE3dt[n] = kappa[n][2]*E2[n][2] - kappa[n][2]*E3[n][2]
-    #     dE3dt[n] = kappa[n][3]*E2[n][3] - kappa[n][3]*E3[n][3]
+    #     dE3dt = kappa[1]*E2[1] - kappa[1]*E3[1]
+    #     dE3dt = kappa[2]*E2[2] - kappa[2]*E3[2]
+    #     dE3dt = kappa[3]*E2[3] - kappa[3]*E3[3]
 
-    #     dE4dt[n] = kappa[n][1]*E3[n][1] - kappa[n][1]*E4[n][1]
-    #     dE4dt[n] = kappa[n][2]*E3[n][2] - kappa[n][2]*E4[n][2]
-    #     dE4dt[n] = kappa[n][3]*E3[n][3] - kappa[n][3]*E4[n][3]            
+    #     dE4dt = kappa[1]*E3[1] - kappa[1]*E4[1]
+    #     dE4dt = kappa[2]*E3[2] - kappa[2]*E4[2]
+    #     dE4dt = kappa[3]*E3[3] - kappa[3]*E4[3]            
 
     #     # Infected compartments
-    #     dIdt[n] = kappa[n][1]*E4[n][1] - delta[n][1]*I[n][1] - gamma[n][1]*I[n][1]
-    #     dIdt[n] = kappa[n][2]*E4[n][2] - delta[n][2]*I[n][2] - gamma[n][2]*I[n][2]
-    #     dIdt[n] = kappa[n][3]*E4[n][3] - delta[n][3]*I[n][3] - gamma[n][3]*I[n][3] 
+    #     dIdt = kappa[1]*E4[1] - delta[1]*I[1] - gamma[1]*I[1]
+    #     dIdt = kappa[2]*E4[2] - delta[2]*I[2] - gamma[2]*I[2]
+    #     dIdt = kappa[3]*E4[3] - delta[3]*I[3] - gamma[3]*I[3] 
 
     # return dSdt, dE2dt, dE3dt, dE4dt, dV1dt, dV2dt, dIdt
+
+
+class HeffernanOdeModel(BaseModel):
+    def __init__(self,
+                stochastic=False,
+                range_delay=None
+                ):
+        self._age_groups = [['0-4'], ['5-9'], ['10-14'], ['15-19'], ['20-24'], ['25-29'], ['30-34'], ['35-39'], ['40-44'], ['45-49'], ['50-54'], ['55-59'], ['60-64'], ['65-69'],  ['70-74'], ['75+']]
+        self.common_parameters = {"alpha": [1, 2/3, 1/3, 0], "beta": [0.08, 0.04, 0.08, 0.008], "gamma": [0, 0.2, 0.1, 1/15], "delta": [0, 0, 0, 0.0001], "omega": [0, 1/365, 1/365, 1/365], "kappa": [0, 1/1.5, 1/1.5, 1/1.5], "rho": 0.8, "N": 16}
+        self._pop_size = pd.read_excel(PATH_TO_DATA, sheet_name='population', skiprows=3, usecols=(2,2))
+        self.pop_size = None
+
+print( pd.read_excel(PATH_TO_DATA, sheet_name='population', skiprows=3, usecols=(2,2)))
 
