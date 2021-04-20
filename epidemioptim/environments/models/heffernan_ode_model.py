@@ -53,7 +53,7 @@ def model(y: tuple,
     gamma: tuple
         Recovery rate of infected individuals from Ijm (j immunity status, m age group).
     rho: float
-        Vaccination efficacy.
+        Vaccination efficacy for the first dose.
     omega: tuple
         Waning rate of immunity of individuals from Sin (i immunity status, n age group).
     delta: tuple
@@ -156,3 +156,4 @@ def model(y: tuple,
     #     dIdt[n] = kappa[n][3]*E4[n][3] - delta[n][3]*I[n][3] - gamma[n][3]*I[n][3] 
 
     # return dSdt, dE2dt, dE3dt, dE4dt, dV1dt, dV2dt, dIdt
+
