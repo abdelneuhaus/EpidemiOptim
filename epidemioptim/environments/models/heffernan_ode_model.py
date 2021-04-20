@@ -178,9 +178,8 @@ class HeffernanOdeModel(BaseModel):
         Extract and define distributions of parameters for all age groups
         """
 
-        #label2ind = dict(zip(list(self.parameters), np.arange(len(self._age_groups))))
+        grp = 0
         for i in self._age_groups[i]:
-            grp = 0
             self._all_internal_params_distribs[i] = dict(alpha=[1, 2/3, 1/3, 0],
                                                          beta=[0.08, 0.04, 0.08, 0.008],
                                                          gamma=[0, 0.2, 0.1, 1/15],
