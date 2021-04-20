@@ -1,3 +1,4 @@
+from numpy import intersect1d
 from odeintw import odeintw
 
 from epidemioptim.environments.models.base_model import BaseModel
@@ -13,7 +14,7 @@ PATH_TO_COMORBIDITY_MATRIX = get_repo_path() + '/data/jane_model_data/coMorbidit
 
 
 # ODE model
-def model(y: tuple,
+def vaccination_model(y: tuple,
           t: tuple,
           p1: tuple, 
           p2: tuple, 
@@ -62,7 +63,7 @@ def model(y: tuple,
     A: tuple
        Per capita activity counts of individuals in age group n
     infect: tuple
-       Force of infection. Product of 
+       Force of infection for an age group. Equals to A*a*lambda with lambda = sum(c)*(sum(beta*I)/sum(Nt)) at a timestep t
     sigma: float
        Vaccination rate.
 
@@ -117,13 +118,98 @@ def model(y: tuple,
 
 class HeffernanOdeModel(BaseModel):
     def __init__(self,
+                age_group = '0-4',
                 stochastic=False,
                 range_delay=None
                 ):
+        self.p1 = get_text_file_data(PATH_TO_COMORBIDITY_MATRIX)
+        self.p2 = get_text_file_data(PATH_TO_COMORBIDITY_MATRIX)
+        self.p3 = [[0] + sub[1:] for sub in self.p1]
+        self._kval = pd.read_excel(PATH_TO_DATA, sheet_name='kvalFull')     # Need to pip install openpyxl
+        self.kval = self._kval.iloc[0:59,1:4].values.tolist()
+        self.pertubations_matrices = pd.read_excel(PATH_TO_DATA, sheet_name='Perturbation Matricies')
+        self.sf1 = self.pertubations_matrices.iloc[2:18,1:17].values.tolist()
+        self.sf2 = self.pertubations_matrices.iloc[21:37,1:17].values.tolist()
+        self.sf3 = self.pertubations_matrices.iloc[40:56,1:17].values.tolist()
+        self.sf4 = self.pertubations_matrices.iloc[59:75,1:17].values.tolist()
+        self.sf5 = self.pertubations_matrices.iloc[78:94,1:17].values.tolist()
+        self.sf6 = self.pertubations_matrices.iloc[97:113,1:17].values.tolist()
+        self.of1 = self.pertubations_matrices.iloc[2:18,19:35].values.tolist()
+        self.of2 = self.pertubations_matrices.iloc[21:37,19:35].values.tolist()
+        self.wf1 = self.pertubations_matrices.iloc[2:18,37:53].values.tolist()
+        self.wf2 = self.pertubations_matrices.iloc[21:37,37:53].values.tolist()
+        self.modifier = pd.read_excel(PATH_TO_DATA, sheet_name='contactModifiersFull')
+        self.E1 = self.modifier.iloc[2:63,2:5].values.tolist()
+        self.E2 = self.modifier.iloc[2:63,6:9].values.tolist()
+        self.E3 = self.modifier.iloc[2:63,10:13].values.tolist()
+        self.E4 = self.modifier.iloc[2:63,14:17].values.tolist()
+        self.E5 = self.modifier.iloc[2:63,18:21].values.tolist()
+        self.Ebase = self.modifier.iloc[2:63,22:25].values.tolist()
+        self.contact_modifiers = [self.E1, self.E2, self.E3, self.E4, self.E5, self.Ebase]
         self._age_groups = ['0-4', '5-9', '10-14', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44', '45-49', '50-54', '55-59', '60-64', '65-69',  '70-74', '75+']
-        self.common_parameters = {"alpha": [1, 2/3, 1/3, 0], "beta": [0.08, 0.04, 0.08, 0.008], "gamma": [0, 0.2, 0.1, 1/15], "delta": [0, 0, 0, 0.0001], "omega": [0, 1/365, 1/365, 1/365], "kappa": [0, 1/1.5, 1/1.5, 1/1.5], "rho": 0.8, "N": 16}
         self._pop_size = pd.read_excel(PATH_TO_DATA, sheet_name='population', skiprows=3, usecols=(2,2))
-        self.pop_size = {idx: value for (idx,value) in enumerate(set(self._pop_size['Unnamed: 2']))}
-_pop_size = pd.read_excel(PATH_TO_DATA, sheet_name='population', skiprows=3, usecols=(2,2))
-print({idx: value for (idx,value) in enumerate(set(_pop_size['Unnamed: 2']))})
+        self.pop_size = dict(zip(self._age_groups, (self._pop_size['Unnamed: 2'])))
+        self.parameters = ['alpha', 'beta', 'gamma', 'delta', 'omega', 'kappa', 'rho', 'sigma', 'p1', 'p2', 'p3', 'A', 'infect']
+        assert age_group in self._age_groups, 'age group should be one of ' + str(self._regions)
 
+        self.age_group = age_group
+        self.stochastic = stochastic
+        self._all_internal_params_distribs = dict()
+        self._all_initial_state_distribs = dict()
+
+        # Initialize distributions of parameters and initial conditions for all regions
+        self.define_params_and_initial_state_distributions()
+
+        # Sample initial conditions and initial model parameters
+        internal_params_labels = ['alpha', 'beta', 'gamma', 'delta', 'omega', 'kappa', 'rho', 'sigma', 'p1', 'p2', 'p3', 'A', 'infect']
+
+        # Define ODE model
+        self.internal_model = vaccination_model
+
+        super().__init__(internal_states_labels=['S1', 'S2', 'S3', 'S4', 'E21', 'E22', 'E23', 'E31', 'E32', 'E33', 'E41', 'E42', 'E43',
+                                                 'V11', 'V12', 'V13', 'V14', 'V21', 'V22', 'V23', 'V24', 'I2', 'I3', 'I4'],
+                         internal_params_labels=internal_params_labels,
+                         stochastic=stochastic,
+                         range_delay=range_delay)
+
+
+    def define_params_and_initial_state_distributions(self):
+        """
+        Extract and define distributions of parameters for all age groups
+        """
+
+        #label2ind = dict(zip(list(self.parameters), np.arange(len(self._age_groups))))
+        for i in self._age_groups[i]:
+            grp = 0
+            self._all_internal_params_distribs[i] = dict(alpha=[1, 2/3, 1/3, 0],
+                                                         beta=[0.08, 0.04, 0.08, 0.008],
+                                                         gamma=[0, 0.2, 0.1, 1/15],
+                                                         delta=[0, 0, 0, 0.0001],
+                                                         omega=[0, 1/365, 1/365, 1/365],
+                                                         kappa=[0, 1/1.5, 1/1.5, 1/1.5],
+                                                         rho=0.8,
+                                                         sigma=1e-20,
+                                                         p1=self.p1[grp],
+                                                         p2=self.p2[grp],
+                                                         p3=self.p3[grp],
+                                                         A=None,
+                                                         infect=None
+                                                        )
+            self._all_initial_state_distribs[i] = dict(E0=LogNormalDist(params=mv2musig(self.fitted_params['initE_mean'][i], self.fitted_cov['initE_pop'][label2ind['initE_pop']]),
+                                                                        stochastic=self.stochastic),
+                                                       I0=DiracDist(params=self.fitted_params['I0_kalman_mean'][i], stochastic=self.stochastic),
+                                                       R0=DiracDist(params=0, stochastic=self.stochastic),
+                                                       A0=DiracDist(params=1, stochastic=self.stochastic),  # is updated below
+                                                       H0=DiracDist(params=self.fitted_params['H0_kalman_mean'][i], stochastic=self.stochastic)
+                                                       )
+            grp += 1                                           
+
+
+parameters = ['alpha', 'beta', 'gamma', 'delta', 'omega', 'kappa', 'rho', 'sigma', 'p1', 'p2', 'p3', 'A', 'infect']
+_age_groups = ['0-4', '5-9', '10-14', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44', '45-49', '50-54', '55-59', '60-64', '65-69',  '70-74', '75+']
+
+label2ind = dict(zip(list(parameters), np.arange(len(_age_groups))))
+_all_internal_params_distribs = dict()
+for i in _age_groups:
+    _all_internal_params_distribs[i] = [0]
+    

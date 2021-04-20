@@ -533,3 +533,20 @@ class Logger:
             f.write(msg)
 
 
+def get_text_file_data(path):
+    """
+    Read a text file and convert each line into a sublist
+    
+    Output
+    ------
+    List with as many sublists as lines in the text file
+    """
+    file = open(path, "r")
+    tmp = []
+    for line in file:
+        stripped_line = line.strip()
+        line_list = stripped_line.split()
+        line_list = [float(x) for x in line_list]
+        tmp.append(line_list)
+    file.close()
+    return tmp
