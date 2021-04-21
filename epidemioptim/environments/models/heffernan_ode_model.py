@@ -168,7 +168,7 @@ class HeffernanOdeModel(BaseModel):
         self.internal_model = vaccination_model
 
         super().__init__(internal_states_labels=['S1', 'S2', 'S3', 'S4', 'E21', 'E22', 'E23', 'E31', 'E32', 'E33', 'E41', 'E42', 'E43',
-                                                 'V11', 'V12', 'V13', 'V14', 'V21', 'V22', 'V23', 'V24', 'I2', 'I3', 'I4'],
+                                                 'V11', 'V21', 'V31', 'V41', 'V12', 'V22', 'V32', 'V42', 'I2', 'I3', 'I4'],
                          internal_params_labels=internal_params_labels,
                          stochastic=stochastic,
                          range_delay=range_delay)
@@ -209,13 +209,13 @@ class HeffernanOdeModel(BaseModel):
                                                        E420=DiracDist(params=0, stochastic=self.stochastic),
                                                        E430=DiracDist(params=0, stochastic=self.stochastic),
                                                        V110=DiracDist(params=0, stochastic=self.stochastic),
-                                                       V120=DiracDist(params=0, stochastic=self.stochastic),
-                                                       V130=DiracDist(params=0, stochastic=self.stochastic),
-                                                       V140=DiracDist(params=0, stochastic=self.stochastic),
                                                        V210=DiracDist(params=0, stochastic=self.stochastic),
+                                                       V310=DiracDist(params=0, stochastic=self.stochastic),
+                                                       V410=DiracDist(params=0, stochastic=self.stochastic),
+                                                       V120=DiracDist(params=0, stochastic=self.stochastic),
                                                        V220=DiracDist(params=0, stochastic=self.stochastic),
-                                                       V230=DiracDist(params=0, stochastic=self.stochastic),
-                                                       V240=DiracDist(params=0, stochastic=self.stochastic),
+                                                       V320=DiracDist(params=0, stochastic=self.stochastic),
+                                                       V420=DiracDist(params=0, stochastic=self.stochastic),
                                                        I20=DiracDist(params=167/3, stochastic=self.stochastic),
                                                        I30=DiracDist(params=0, stochastic=self.stochastic),
                                                        I40=DiracDist(params=0, stochastic=self.stochastic)
