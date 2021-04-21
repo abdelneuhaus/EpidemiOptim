@@ -697,3 +697,17 @@ def get_coverage(path):
 def vaccination_active(path):
     _vaccineFull = pd.read_excel(path, sheet_name='vaccinateFull', skiprows=0, usecols=(1,1)).values.tolist()
     return [x for y in _vaccineFull for x in y]
+
+
+kval=get_kvalue(get_repo_path() + '/data/jane_model_data/ScenarioPlanFranceOne.xlsx')
+def get_k_value(t, kval):
+    """
+    Compare the current timestep t to a list of int and return the appropriate kval
+    """
+    time = [0, 71, 73, 76, 153, 173, 185, 201, 239, 244, 290, 295, 303, 305, 349, 353, 369, 370, 377, 381, 384, 391, 398, 402, 
+                     404, 405, 409, 412, 418, 419, 425, 426, 431, 433, 440, 447, 454, 459, 461, 465, 468, 472 , 475, 481, 482, 488, 
+                     489, 494, 496, 497, 501, 503, 510, 517, 524, 531, 552, 592, 609, 731]
+    for i in range(0, len(time)):
+        if int(t) == time[i]:
+            return kval[i]
+
