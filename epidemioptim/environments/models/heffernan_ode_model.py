@@ -78,7 +78,7 @@ def vaccination_model(y: tuple,
     S1, S2, S3, S4, E21, E22, E23, E31, E32, E33, E41, E42, E43, V11, V12, V13, V14, V21, V22, V23, V24, I2, I3, I4 = y
     T = S1 + S2 + S3 + S4 + E21 + E22 + E23 + E31 + E32 + E33 + E41 + E42 + E43 + V11 + V12 + V13 + V14 + V21 + V22 + V23 + V24 + I2 + I3 + I4
     infect = sum(c)*((beta[1]+beta[2]+beta[3])*(I2+I3+I4)/T)
-    print(T)
+
     # Susceptible compartments
     dS1dt = - sum(p1)*alpha[0]*A[0]*S1*infect + omega[1]*S2 - sigma*rho*S1 + omega[1]*V11
     dS2dt = - sum(p2)*alpha[1]*A[1]*S2*infect + omega[2]*S3 - omega[1]*S2 - sigma*rho*S2 + gamma[1]*I2 + omega[2]*V12
@@ -361,8 +361,11 @@ if __name__ == '__main__':
 #     initial_state[k] = _all_initial_state_distribs[age][k].sample()
 
 
-# internal_states_labels=['S1', 'S2', 'S3', 'S4', 'E21', 'E22']
+# internal_states_labels=['S2', 'S3', 'S4', 'E21', 'E22']
 # initial_internal_params = dict()
 # for k in _all_internal_params_distribs[age].keys():
 #     initial_internal_params[k] = _all_internal_params_distribs[age][k]
-# print(initial_internal_params)
+
+# current_state = dict(zip(internal_states_labels, np.array([initial_state['{}0'.format(s)] for s in internal_states_labels])))
+# _current_state = np.array([current_state['{}'.format(s)] for s in internal_states_labels])
+# print(_current_state)

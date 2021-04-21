@@ -163,7 +163,6 @@ class BaseModel(ABC):
         """
         Get current state in the order of state labels.
 
-
         """
         return np.array([self.current_state['{}'.format(s)] for s in self.internal_states_labels])
 
