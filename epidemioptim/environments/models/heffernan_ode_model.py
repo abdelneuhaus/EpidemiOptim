@@ -138,11 +138,11 @@ class HeffernanOdeModel(BaseModel):
         self.contact_modifiers = get_contact_modifiers(PATH_TO_DATA)
         self.vaccination_coverage = get_coverage(PATH_TO_DATA)
         self.active_vaccination = vaccination_active(PATH_TO_DATA)
-        self.transition_matrices = transition_matrices(self.pop_size, self.H, self.S, self.W, self.O)
         self._age_groups = ['0-4', '5-9', '10-14', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44', '45-49', '50-54', '55-59', '60-64', '65-69',  '70-74', '75+']
         self._pop_size = pd.read_excel(PATH_TO_DATA, sheet_name='population', skiprows=3, usecols=(2,2))
         self.pop_size = dict(zip(self._age_groups, (self._pop_size['Unnamed: 2'])))
-        self.parameters = ['alpha', 'beta', 'gamma', 'delta', 'omega', 'kappa', 'rho', 'sigma', 'p1', 'p2', 'p3', 'A', 'infect']
+        self.transition_matrices = transition_matrices(self.pop_size, self.home, self.school, self.work, self.other)
+        self.parameters = ['alpha', 'beta', 'gamma', 'delta', 'omega', 'kappa', 'rho', 'sigma', 'p1', 'p2', 'p3', 'A', 'c', 'infect']
         self.step = [0, 71, 73, 76, 153, 173, 185, 201, 239, 244, 290, 295, 303, 305, 349, 353, 369, 370, 377, 381, 384, 391, 398, 402, 
                      404, 405, 409, 412, 418, 419, 425, 426, 431, 433, 440, 447, 454, 459, 461, 465, 468, 472 , 475, 481, 482, 488, 
                      489, 494, 496, 497, 501, 503, 510, 517, 524, 531, 552, 592, 609, 731]
@@ -157,7 +157,7 @@ class HeffernanOdeModel(BaseModel):
         self.define_params_and_initial_state_distributions()
 
         # Sample initial conditions and initial model parameters
-        internal_params_labels = ['p1', 'p2', 'p3', 'alpha', 'beta', 'gamma', 'delta', 'omega', 'kappa', 'rho', 'A', 'infect', 'sigma']
+        internal_params_labels = ['p1', 'p2', 'p3', 'alpha', 'beta', 'gamma', 'delta', 'omega', 'kappa', 'rho', 'A', 'c', 'infect', 'sigma']
 
         # Define ODE model
         self.internal_model = vaccination_model
@@ -186,9 +186,9 @@ class HeffernanOdeModel(BaseModel):
                                                          omega=[0, 1/365, 1/365, 1/365],
                                                          kappa=[0, 1/1.5, 1/1.5, 1/1.5],
                                                          rho=0.8,
-                                                         A=calculate_A_and_c(0, 1, self.contact_modifiers, self.perturbations_matrices, self.transition_matrices, 16)[0],
+                                                         a=calculate_A_and_c(0, 1, self.contact_modifiers, self.perturbations_matrices, self.transition_matrices, 16)[0],
                                                          c=calculate_A_and_c(0, 1, self.contact_modifiers, self.perturbations_matrices, self.transition_matrices, 16)[1],
-                                                         sigma=sigma_calculation(0, 0, self.vaccination_coverage)
+                                                         sigma=sigma_calculation(0, self.active_vaccination, self.vaccination_coverage)
                                                         )
                                                         
             self._all_initial_state_distribs[i] = dict(S20=DiracDist(params=0, stochastic=self.stochastic),
@@ -218,25 +218,17 @@ class HeffernanOdeModel(BaseModel):
             grp += 1                                           
 
 
-
     def _sample_initial_state(self):
         """
         Samples an initial model state from its distribution (Dirac distributions if self.stochastic is False).
 
-
         """
         self.initial_state = dict()
-        for k in self._all_initial_state_distribs[self.region].keys():
-            self.initial_state[k] = self._all_initial_state_distribs[self.region][k].sample()
+        for k in self._all_initial_state_distribs[self.age_group].keys():
+            self.initial_state[k] = self._all_initial_state_distribs[self.age_group][k].sample()
 
-        # A0 is computed as a function of I0 and r_fit (see Prague et al., 2020)
-        self.initial_state['A0'] = self.initial_state['I0'] * (1 - self.current_internal_params['r_fit']) / self.current_internal_params['r_fit']
-        for k in self._all_initial_state_distribs[self.region].keys():
-            self.initial_state[k] = int(self.initial_state[k])
-
-        # S0 is computed from other states, as the sum of all states equals the population size N
-        self.initial_state['S0'] = self.current_internal_params['N'] - np.sum([self.initial_state['{}0'.format(s)] for s in self.internal_states_labels[1:]])
-
+        # S10 is computed from other states, as the sum of all states equals the population size N
+        self.initial_state['S10'] = self.pop_size[self.age_group] - np.sum([self.initial_state['{}0'.format(s)] for s in self.internal_states_labels[1:]])
 
 
 
@@ -246,8 +238,8 @@ class HeffernanOdeModel(BaseModel):
 
         """
         self.initial_internal_params = dict()
-        for k in self._all_internal_params_distribs[self.region].keys():
-            self.initial_internal_params[k] = self._all_internal_params_distribs[self.region][k].sample()
+        for k in self._all_internal_params_distribs[self.age_group].keys():
+            self.initial_internal_params[k] = self._all_internal_params_distribs[self.age_group][k]
         self._reset_model_params()
 
 
@@ -288,54 +280,89 @@ class HeffernanOdeModel(BaseModel):
 
 
 
+if __name__ == '__main__':
+    # Get model
+    model = HeffernanOdeModel(age_group='0-4', stochastic=False)
+
+    # Run simulation
+    simulation_horizon = 364
+    model_states = model.run_n_steps(n=simulation_horizon)
+
+    # Plot
+    time = np.arange(simulation_horizon)
+    labels = model.internal_states_labels
+
+    plot_stats(t=time,
+               states=model_states.transpose(),
+               labels=labels,
+               show=True)
 
 
 
 
 
 
-
-
-parameters = ['alpha', 'beta', 'gamma', 'delta', 'omega', 'kappa', 'rho', 'sigma', 'p1', 'p2', 'p3', 'A', 'infect']
-_age_groups = ['0-4', '5-9', '10-14', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44', '45-49', '50-54', '55-59', '60-64', '65-69',  '70-74', '75+']
-_pop_size = pd.read_excel(PATH_TO_DATA, sheet_name='population', skiprows=3, usecols=(2,2))
-label2ind = dict(zip(list(parameters), np.arange(len(_age_groups))))
-_all_internal_params_distribs = dict()
-for i in _age_groups:
-    _all_internal_params_distribs[i] = [0]
+# parameters = ['alpha', 'beta', 'gamma', 'delta', 'omega', 'kappa', 'rho', 'sigma', 'p1', 'p2', 'p3', 'A', 'infect']
+# _age_groups = ['0-4', '5-9', '10-14', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44', '45-49', '50-54', '55-59', '60-64', '65-69',  '70-74', '75+']
+# _pop_size = pd.read_excel(PATH_TO_DATA, sheet_name='population', skiprows=3, usecols=(2,2))
+# pop_size = dict(zip(_age_groups, (_pop_size['Unnamed: 2'])))
+# label2ind = dict(zip(list(parameters), np.arange(len(_age_groups))))
+# _all_internal_params_distribs = dict()
+# for i in _age_groups:
+#     _all_internal_params_distribs[i] = [0]
     
-pertubations_matrices = get_perturbations_matrices(PATH_TO_DATA)
-pop_size = dict(zip(_age_groups, (_pop_size['Unnamed: 2'])))
+# pertubations_matrices = get_perturbations_matrices(PATH_TO_DATA)
+# pop_size = dict(zip(_age_groups, (_pop_size['Unnamed: 2'])))
 
-contact_modifiers = get_contact_modifiers(PATH_TO_DATA)
-perturbations_matrices = get_perturbations_matrices(PATH_TO_DATA)
-W = get_text_file_data(PATH_TO_WORK_MATRIX) # work
-O = get_text_file_data(PATH_TO_OTHER_MATRIX) # other places
-H = get_text_file_data(PATH_TO_HOME_MATRIX) # home
-S = get_text_file_data(PATH_TO_SCHOOL_MATRIX)
-transition_matrices = transition_matrices(pop_size, H, S, W, O)
+# contact_modifiers = get_contact_modifiers(PATH_TO_DATA)
+# perturbations_matrices = get_perturbations_matrices(PATH_TO_DATA)
+# W = get_text_file_data(PATH_TO_WORK_MATRIX) # work
+# O = get_text_file_data(PATH_TO_OTHER_MATRIX) # other places
+# H = get_text_file_data(PATH_TO_HOME_MATRIX) # home
+# S = get_text_file_data(PATH_TO_SCHOOL_MATRIX)
+# transition_matrices = transition_matrices(pop_size, H, S, W, O)
 
-A = calculate_A_and_c(0, 1, contact_modifiers, perturbations_matrices, transition_matrices, 16)[0]
-p1 = get_text_file_data(PATH_TO_COMORBIDITY_MATRIX)
-p2 = get_text_file_data(PATH_TO_COMORBIDITY_MATRIX)
-p3 = [[0] + sub[1:] for sub in p1]
-vaccination_coverage = get_coverage(PATH_TO_DATA)
-active_vaccination = vaccination_active(PATH_TO_DATA)
+# A = calculate_A_and_c(0, 1, contact_modifiers, perturbations_matrices, transition_matrices, 16)[0]
+# p1 = get_text_file_data(PATH_TO_COMORBIDITY_MATRIX)
+# p2 = get_text_file_data(PATH_TO_COMORBIDITY_MATRIX)
+# p3 = [[0] + sub[1:] for sub in p1]
+# vaccination_coverage = get_coverage(PATH_TO_DATA)
+# active_vaccination = vaccination_active(PATH_TO_DATA)
+# _all_initial_state_distribs = dict()
 
-grp = 0
-for i in _age_groups:
-    _all_internal_params_distribs[i] = dict(alpha=[1, 2/3, 1/3, 0],
-                                            beta=[0.08, 0.04, 0.08, 0.008],
-                                            gamma=[0, 0.2, 0.1, 1/15],
-                                            delta=[0, 0, 0, 0.0001],
-                                            omega=[0, 1/365, 1/365, 1/365],
-                                            kappa=[0, 1/1.5, 1/1.5, 1/1.5],
-                                            rho=0.8,
-                                            p1=p1[grp],
-                                            p2=p2[grp],
-                                            p3=p3[grp],
-                                            A=calculate_A_and_c(0, 1, contact_modifiers, perturbations_matrices, transition_matrices, 16)[0],
-                                            c=calculate_A_and_c(0, 1, contact_modifiers, perturbations_matrices, transition_matrices, 16)[1],
-                                            sigma=sigma_calculation(0, active_vaccination, vaccination_coverage)
-                                            )
-    grp += 1
+# grp = 0
+# for i in _age_groups:
+#     _all_internal_params_distribs[i] = dict(alpha=[1, 2/3, 1/3, 0],
+#                                             beta=[0.08, 0.04, 0.08, 0.008],
+#                                             gamma=[0, 0.2, 0.1, 1/15],
+#                                             delta=[0, 0, 0, 0.0001],
+#                                             omega=[0, 1/365, 1/365, 1/365],
+#                                             kappa=[0, 1/1.5, 1/1.5, 1/1.5],
+#                                             rho=0.8,
+#                                             p1=p1[grp],
+#                                             p2=p2[grp],
+#                                             p3=p3[grp],
+#                                             A=calculate_A_and_c(0, 1, contact_modifiers, perturbations_matrices, transition_matrices, 16)[0],
+#                                             c=calculate_A_and_c(0, 1, contact_modifiers, perturbations_matrices, transition_matrices, 16)[1],
+#                                             sigma=sigma_calculation(0, active_vaccination, vaccination_coverage)
+#                                             )
+
+
+#     _all_initial_state_distribs[i] = dict(S20=DiracDist(params=0, stochastic=False),
+#                                           S30=DiracDist(params=0, stochastic=False),
+#                                           S40=DiracDist(params=0, stochastic=False),
+#                                           E210=DiracDist(params=0, stochastic=False),
+#                                           E220=DiracDist(params=0, stochastic=False)
+#                                           )
+#     grp += 1
+# age = '0-4'
+# initial_state = dict()
+# for k in _all_initial_state_distribs[age].keys():
+#     initial_state[k] = _all_initial_state_distribs[age][k].sample()
+
+
+# internal_states_labels=['S1', 'S2', 'S3', 'S4', 'E21', 'E22']
+# initial_internal_params = dict()
+# for k in _all_internal_params_distribs[age].keys():
+#     initial_internal_params[k] = _all_internal_params_distribs[age][k]
+# print(initial_internal_params)
