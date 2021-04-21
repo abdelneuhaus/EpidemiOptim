@@ -287,7 +287,7 @@ if __name__ == '__main__':
     model = HeffernanOdeModel(age_group='5-9', stochastic=False)
 
     # Run simulation
-    simulation_horizon = 470
+    simulation_horizon = 365
     model_states = model.run_n_steps(n=simulation_horizon)
 
     # Plot
