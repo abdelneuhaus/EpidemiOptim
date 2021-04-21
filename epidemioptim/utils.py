@@ -686,7 +686,7 @@ def calculate_A_and_c(step, k, contact_modifiers, perturbation_matrices, transit
 def sigma_calculation(step, boolVaccination, coverage):
     if (boolVaccination[step] == 1):
         return coverage[step]/100*(1/12)/(1-coverage[step]/100)
-    return 1e-20
+    return 0
 
 
 def get_coverage(path):

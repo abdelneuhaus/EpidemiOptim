@@ -77,47 +77,50 @@ def vaccination_model(y: tuple,
         Next states.
     """
 
-    S1, S2, S3, S4, E21, E22, E23, E31, E32, E33, E41, E42, E43, V11, V12, V13, V14, V21, V22, V23, V24, I2, I3, I4 = y
-    T = S1 + S2 + S3 + S4 + E21 + E22 + E23 + E31 + E32 + E33 + E41 + E42 + E43 + V11 + V12 + V13 + V14 + V21 + V22 + V23 + V24 + I2 + I3 + I4
+    S1, S2, S3, S4, E21, E22, E23, E31, E32, E33, E41, E42, E43, V11, V21, V31, V41, V12, V22, V32, V42, I2, I3, I4 = y
+    T = S1 + S2 + S3 + S4 + E21 + E22 + E23 + E31 + E32 + E33 + E41 + E42 + E43 + V11 + V21 + V31 + V41 + V12 + V22 + V32 + V42 + I2 + I3 + I4
     infect = sum(c)*((beta[1]+beta[2]+beta[3])*(I2+I3+I4)/T)
 
     # Susceptible compartments
     dS1dt = - sum(p1)*alpha[0]*A[0]*S1*infect + omega[1]*S2 - sigma*rho*S1 + omega[1]*V11
-    dS2dt = - sum(p2)*alpha[1]*A[1]*S2*infect + omega[2]*S3 - omega[1]*S2 - sigma*rho*S2 + gamma[1]*I2 + omega[2]*V12
-    dS3dt = - (p3[1]+p3[2])*alpha[2]*A[2]*S3*infect + omega[3]*S4 - omega[2]*S3 - sigma*rho*S3 + gamma[2]*I3 + omega[3]*(V13+V14+V21+V22+V23+V24)
+    dS2dt = - sum(p2)*alpha[1]*A[1]*S2*infect + omega[2]*S3 - omega[1]*S2 - sigma*rho*S2 + gamma[1]*I2 + omega[2]*V21
+    dS3dt = - (p3[1]+p3[2])*alpha[2]*A[2]*S3*infect + omega[3]*S4 - omega[2]*S3 - sigma*rho*S3 + gamma[2]*I3 + omega[3]*(V31+V41+V12+V22+V32+V42)
     dS4dt = - omega[3]*S4 - sigma*rho*S4 + gamma[3]*I4
     
     # Vaccinated compartments
     dV11dt = sigma*rho*S1 - sigma*rho*V11 - sum(p2)*alpha[1]*A[1]*V11*infect - omega[1]*V11
-    dV12dt = sigma*rho*S2 - sigma*rho*V12 - (p3[1]+p3[2])*alpha[2]*A[2]*V12*infect - omega[2]*V12
-    dV13dt = sigma*rho*S3 - sigma*rho*V13 - omega[3]*V13
-    dV14dt = sigma*rho*S4 - sigma*rho*V14 - omega[3]*V14
+    dV21dt = sigma*rho*S2 - sigma*rho*V21 - (p3[1]+p3[2])*alpha[2]*A[2]*V21*infect - omega[2]*V21
+    dV31dt = sigma*rho*S3 - sigma*rho*V31 - omega[3]*V31
+    dV41dt = sigma*rho*S4 - sigma*rho*V41 - omega[3]*V41
 
-    dV21dt = sigma*rho*V11 - omega[3]*V21
-    dV22dt = sigma*rho*V12 - omega[3]*V22
-    dV23dt = sigma*rho*V13 - omega[3]*V23
-    dV24dt = sigma*rho*V14 - omega[3]*V24
+    dV12dt = sigma*rho*V11 - omega[3]*V12
+    dV22dt = sigma*rho*V21 - omega[3]*V22
+    dV32dt = sigma*rho*V31 - omega[3]*V32
+    dV42dt = sigma*rho*V41 - omega[3]*V42
 
     # Exposed compartments
+    # To I2
     dE21dt = p1[0]*alpha[0]*A[0]*S1*infect + p2[0]*alpha[1]*A[1]*S2*infect + p2[0]*alpha[1]*A[1]*V11*infect - kappa[1]*E21
-    dE22dt = p1[1]*alpha[0]*A[0]*S1*infect + p2[1]*alpha[1]*A[1]*S2*infect + p3[1]*alpha[2]*A[2]*S3*infect + p2[1]*alpha[1]*A[1]*V11*infect + p3[1]*alpha[2]*A[2]*V12*infect - kappa[2]*E22
-    dE23dt = p1[2]*alpha[0]*A[0]*S1*infect + p2[2]*alpha[1]*A[1]*S2*infect + p3[2]*alpha[2]*A[2]*S3*infect + p2[2]*alpha[1]*A[1]*V11*infect + p3[2]*alpha[2]*A[2]*V12*infect - kappa[3]*E23
+    dE22dt = kappa[1]*E21 - kappa[2]*E22
+    dE23dt = kappa[2]*E22 - kappa[3]*E23
 
-    dE31dt = kappa[1]*E21 - kappa[1]*E31
-    dE32dt = kappa[2]*E22 - kappa[2]*E32
-    dE33dt = kappa[3]*E23 - kappa[3]*E33
+    # To I3
+    dE31dt = p1[1]*alpha[0]*A[0]*S1*infect + p2[1]*alpha[1]*A[1]*S2*infect + p3[1]*alpha[2]*A[2]*S3*infect + p2[1]*alpha[1]*A[1]*V11*infect + p3[1]*alpha[2]*A[2]*V21*infect - kappa[1]*E31
+    dE32dt = kappa[1]*E31 - kappa[2]*E32
+    dE33dt = kappa[2]*E32 - kappa[3]*E33
 
-    dE41dt = kappa[1]*E31 - kappa[1]*E41
-    dE42dt = kappa[2]*E32 - kappa[2]*E42
-    dE43dt = kappa[3]*E33 - kappa[3]*E43            
+    # To I4
+    dE41dt = p1[2]*alpha[0]*A[0]*S1*infect + p2[2]*alpha[1]*A[1]*S2*infect + p3[2]*alpha[2]*A[2]*S3*infect + p2[2]*alpha[1]*A[1]*V11*infect + p3[2]*alpha[2]*A[2]*V21*infect - kappa[1]*E41
+    dE42dt = kappa[1]*E41 - kappa[2]*E42
+    dE43dt = kappa[2]*E42 - kappa[3]*E43            
 
     # Infected compartments
-    dI2dt = kappa[1]*E41 - delta[1]*I2 - gamma[1]*I2
-    dI3dt = kappa[2]*E42 - delta[2]*I3 - gamma[2]*I3
+    dI2dt = kappa[3]*E23 - delta[1]*I2 - gamma[1]*I2
+    dI3dt = kappa[3]*E33 - delta[2]*I3 - gamma[2]*I3
     dI4dt = kappa[3]*E43 - delta[3]*I4 - gamma[3]*I4 
 
     dydt = [dS1dt, dS2dt, dS3dt, dS4dt, dE21dt, dE22dt, dE23dt, dE31dt, dE32dt, dE33dt, 
-    dE41dt, dE42dt, dE43dt, dV11dt, dV12dt, dV13dt, dV14dt, dV21dt, dV22dt, dV23dt, dV24dt, dI2dt, dI3dt, dI4dt]
+    dE41dt, dE42dt, dE43dt, dV11dt, dV12dt, dV31dt, dV41dt, dV21dt, dV22dt, dV32dt, dV42dt, dI2dt, dI3dt, dI4dt]
     return dydt
 
 
