@@ -15,20 +15,20 @@ PATH_TO_COMORBIDITY_MATRIX = get_repo_path() + '/data/jane_model_data/coMorbidit
 
 # ODE model
 def vaccination_model(y: tuple,
-          t: tuple,
-          p1: tuple, 
-          p2: tuple, 
-          p3: tuple, 
-          alpha: tuple,
-          beta: tuple, 
-          kappa: tuple, 
-          gamma: tuple, 
-          rho: float, 
-          omega: tuple, 
-          delta: tuple, 
-          A: tuple, 
-          c: tuple, 
-          sigma: float):
+                      t: tuple,
+                      A: tuple,
+                      alpha: tuple,
+                      beta: tuple, 
+                      c: tuple,
+                      delta: tuple,
+                      gamma: tuple,
+                      kappa: tuple, 
+                      omega: tuple,
+                      p1: tuple, 
+                      p2: tuple, 
+                      p3: tuple,
+                      rho: float, 
+                      sigma: float):
     """
     Parameters
     ----------
@@ -78,7 +78,7 @@ def vaccination_model(y: tuple,
     S1, S2, S3, S4, E21, E22, E23, E31, E32, E33, E41, E42, E43, V11, V12, V13, V14, V21, V22, V23, V24, I2, I3, I4 = y
     T = S1 + S2 + S3 + S4 + E21 + E22 + E23 + E31 + E32 + E33 + E41 + E42 + E43 + V11 + V12 + V13 + V14 + V21 + V22 + V23 + V24 + I2 + I3 + I4
     infect = sum(c)*((beta[1]+beta[2]+beta[3])*(I2+I3+I4)/T)
-
+    print(T)
     # Susceptible compartments
     dS1dt = - sum(p1)*alpha[0]*A[0]*S1*infect + omega[1]*S2 - sigma*rho*S1 + omega[1]*V11
     dS2dt = - sum(p2)*alpha[1]*A[1]*S2*infect + omega[2]*S3 - omega[1]*S2 - sigma*rho*S2 + gamma[1]*I2 + omega[2]*V12
@@ -142,7 +142,7 @@ class HeffernanOdeModel(BaseModel):
         self._pop_size = pd.read_excel(PATH_TO_DATA, sheet_name='population', skiprows=3, usecols=(2,2))
         self.pop_size = dict(zip(self._age_groups, (self._pop_size['Unnamed: 2'])))
         self.transition_matrices = transition_matrices(self.pop_size, self.home, self.school, self.work, self.other)
-        self.parameters = ['alpha', 'beta', 'gamma', 'delta', 'omega', 'kappa', 'rho', 'sigma', 'p1', 'p2', 'p3', 'A', 'c', 'infect']
+        #self.parameters = ['A', 'alpha', 'beta', 'c', 'delta', 'gamma', 'kappa', 'omega', 'p1', 'p2', 'p3', 'rho', 'sigma']
         self.step = [0, 71, 73, 76, 153, 173, 185, 201, 239, 244, 290, 295, 303, 305, 349, 353, 369, 370, 377, 381, 384, 391, 398, 402, 
                      404, 405, 409, 412, 418, 419, 425, 426, 431, 433, 440, 447, 454, 459, 461, 465, 468, 472 , 475, 481, 482, 488, 
                      489, 494, 496, 497, 501, 503, 510, 517, 524, 531, 552, 592, 609, 731]
@@ -157,7 +157,7 @@ class HeffernanOdeModel(BaseModel):
         self.define_params_and_initial_state_distributions()
 
         # Sample initial conditions and initial model parameters
-        internal_params_labels = ['p1', 'p2', 'p3', 'alpha', 'beta', 'gamma', 'delta', 'omega', 'kappa', 'rho', 'A', 'c', 'infect', 'sigma']
+        internal_params_labels = ['A', 'alpha', 'beta', 'c', 'delta', 'gamma', 'kappa', 'omega', 'p1', 'p2', 'p3', 'rho', 'sigma']
 
         # Define ODE model
         self.internal_model = vaccination_model
@@ -176,18 +176,18 @@ class HeffernanOdeModel(BaseModel):
 
         grp = 0
         for i in self._age_groups:
-            self._all_internal_params_distribs[i] = dict(p1=self.p1[grp],
-                                                         p2=self.p2[grp],
-                                                         p3=self.p3[grp],
+            self._all_internal_params_distribs[i] = dict(A=calculate_A_and_c(0, 1, self.contact_modifiers, self.perturbations_matrices, self.transition_matrices, 16)[0][grp],                                                         
                                                          alpha=[1, 2/3, 1/3, 0],
                                                          beta=[0.08, 0.04, 0.08, 0.008],
-                                                         gamma=[0, 0.2, 0.1, 1/15],
+                                                         c=calculate_A_and_c(0, 1, self.contact_modifiers, self.perturbations_matrices, self.transition_matrices, 16)[1][grp],
                                                          delta=[0, 0, 0, 0.0001],
-                                                         omega=[0, 1/365, 1/365, 1/365],
+                                                         gamma=[0, 0.2, 0.1, 1/15],
                                                          kappa=[0, 1/1.5, 1/1.5, 1/1.5],
+                                                         omega=[0, 1/365, 1/365, 1/365],
+                                                         p1=self.p1[grp],
+                                                         p2=self.p2[grp],
+                                                         p3=self.p3[grp],
                                                          rho=0.8,
-                                                         a=calculate_A_and_c(0, 1, self.contact_modifiers, self.perturbations_matrices, self.transition_matrices, 16)[0],
-                                                         c=calculate_A_and_c(0, 1, self.contact_modifiers, self.perturbations_matrices, self.transition_matrices, 16)[1],
                                                          sigma=sigma_calculation(0, self.active_vaccination, self.vaccination_coverage)
                                                         )
                                                         
@@ -211,8 +211,8 @@ class HeffernanOdeModel(BaseModel):
                                                        V220=DiracDist(params=0, stochastic=self.stochastic),
                                                        V230=DiracDist(params=0, stochastic=self.stochastic),
                                                        V240=DiracDist(params=0, stochastic=self.stochastic),
-                                                       I20=DiracDist(params=10/6, stochastic=self.stochastic),
-                                                       I30=DiracDist(params=1/6, stochastic=self.stochastic),
+                                                       I20=DiracDist(params=167/3, stochastic=self.stochastic),
+                                                       I30=DiracDist(params=0, stochastic=self.stochastic),
                                                        I40=DiracDist(params=0, stochastic=self.stochastic)
                                                        )
             grp += 1                                           
