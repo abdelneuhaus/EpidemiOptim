@@ -1,4 +1,5 @@
 import numpy as np
+from numpy.core.fromnumeric import cumsum
 from scipy.integrate import odeint
 
 from epidemioptim.environments.models.base_model import BaseModel
@@ -28,17 +29,18 @@ def vaccination_model(y: tuple,
                       p2: tuple, 
                       p3: tuple,
                       rho: float, 
-                      sigma: float):
+                      sigma: float
+                      ):
     """
     Parameters
     ----------
     y: tuple
        y = [S1, S2, S3, S4, E21, E22, E23, E31, E32, E33, E41, E42, E43, V11, V12, V13, V14, V21, V22, V23, V24, I2, I3, I4]
-       Si: # susceptible individuals with i level of infectiosity
+       Si: # susceptible individuals with i level of infectivity
        E2i: # individuals in mild latent state
        E3i: # individuals in moderate latent state
        E4i: # individuals in severe latent state
-       Ii: # symptomatic infected individuals with i level of infectiosity
+       Ii: # symptomatic infected individuals with i level of infectivity
        V1i: # vaccinated people with one dose, i being the immunity level
        V2i: # vaccinated people with two doses, i being the immunity level
     t: int
@@ -142,10 +144,10 @@ class HeffernanOdeModel(BaseModel):
         self._pop_size = pd.read_excel(PATH_TO_DATA, sheet_name='population', skiprows=3, usecols=(2,2))
         self.pop_size = dict(zip(self._age_groups, (self._pop_size['Unnamed: 2'])))
         self.transition_matrices = transition_matrices(self.pop_size, self.home, self.school, self.work, self.other)
-        #self.parameters = ['A', 'alpha', 'beta', 'c', 'delta', 'gamma', 'kappa', 'omega', 'p1', 'p2', 'p3', 'rho', 'sigma']
-        self.step = [0, 71, 73, 76, 153, 173, 185, 201, 239, 244, 290, 295, 303, 305, 349, 353, 369, 370, 377, 381, 384, 391, 398, 402, 
+        self.step_list = [0, 71, 73, 76, 153, 173, 185, 201, 239, 244, 290, 295, 303, 305, 349, 353, 369, 370, 377, 381, 384, 391, 398, 402, 
                      404, 405, 409, 412, 418, 419, 425, 426, 431, 433, 440, 447, 454, 459, 461, 465, 468, 472 , 475, 481, 482, 488, 
                      489, 494, 496, 497, 501, 503, 510, 517, 524, 531, 552, 592, 609, 731]
+        self.step_number = len(self.step_list)
         assert age_group in self._age_groups, 'age group should be one of ' + str(self._regions)
 
         self.age_group = age_group
@@ -189,8 +191,8 @@ class HeffernanOdeModel(BaseModel):
                                                          p3=self.p3[grp],
                                                          rho=0.8,
                                                          sigma=sigma_calculation(0, self.active_vaccination, self.vaccination_coverage)
-                                                        )
-                                                        
+                                                         )
+
             self._all_initial_state_distribs[i] = dict(S20=DiracDist(params=0, stochastic=self.stochastic),
                                                        S30=DiracDist(params=0, stochastic=self.stochastic),
                                                        S40=DiracDist(params=0, stochastic=self.stochastic),
@@ -282,7 +284,7 @@ class HeffernanOdeModel(BaseModel):
 
 if __name__ == '__main__':
     # Get model
-    model = HeffernanOdeModel(age_group='0-4', stochastic=False)
+    model = HeffernanOdeModel(age_group='5-9', stochastic=False)
 
     # Run simulation
     simulation_horizon = 364
@@ -366,6 +368,7 @@ if __name__ == '__main__':
 # for k in _all_internal_params_distribs[age].keys():
 #     initial_internal_params[k] = _all_internal_params_distribs[age][k]
 
-# current_state = dict(zip(internal_states_labels, np.array([initial_state['{}0'.format(s)] for s in internal_states_labels])))
-# _current_state = np.array([current_state['{}'.format(s)] for s in internal_states_labels])
-# print(_current_state)
+# internal_params_labels = ['A', 'alpha', 'beta', 'c', 'delta', 'gamma', 'kappa', 'omega', 'p1', 'p2', 'p3', 'rho', 'sigma']
+# current_internal_params = initial_internal_params.copy()
+# print([current_internal_params[k] for k in internal_params_labels])
+

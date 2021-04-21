@@ -3,6 +3,7 @@ import os
 import random
 import json
 
+from math import modf
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -643,7 +644,6 @@ def calculate_A_and_c(step, k, contact_modifiers, perturbation_matrices, transit
     c: mixing matrix between individuals of two groups, modified given k
     con:
     """
-
     sf = create_list(1, N, N)
     wf = create_list(1, N, N)
     of = create_list(1, N, N)
