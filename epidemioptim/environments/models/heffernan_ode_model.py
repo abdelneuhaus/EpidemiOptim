@@ -16,7 +16,7 @@ PATH_TO_COMORBIDITY_MATRIX = get_repo_path() + '/data/jane_model_data/coMorbidit
 
 # ODE model
 def vaccination_model(y: tuple,
-                      t: tuple,
+                      t: float,
                       A: tuple,
                       alpha: tuple,
                       beta: tuple, 
