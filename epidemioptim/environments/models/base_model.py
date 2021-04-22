@@ -116,7 +116,8 @@ class BaseModel(ABC):
     @abstractmethod
     def run_n_steps(self,
                     current_state=None,
-                    n=1):
+                    n=1, 
+                    t=None):
         """
         Runs the model for n steps.
 

@@ -192,7 +192,7 @@ class HeffernanOdeModel(BaseModel):
                                                          p1=self.p1[grp],
                                                          p2=self.p2[grp],
                                                          p3=self.p3[grp],
-                                                         rho=0.8,
+                                                         rho=0.8944,
                                                          sigma=sigma_calculation(0, self.active_vaccination, self.vaccination_coverage)
                                                          )
 
@@ -234,7 +234,6 @@ class HeffernanOdeModel(BaseModel):
 
         # S10 is computed from other states, as the sum of all states equals the population size N
         self.initial_state['S10'] = self.pop_size[self.age_group] - np.sum([self.initial_state['{}0'.format(s)] for s in self.internal_states_labels[1:]])
-
 
 
     def _sample_model_params(self):
@@ -287,7 +286,7 @@ class HeffernanOdeModel(BaseModel):
 
 if __name__ == '__main__':
     # Get model
-    model = HeffernanOdeModel(age_group='70-74', stochastic=False)
+    model = HeffernanOdeModel(age_group='40-44', stochastic=False)
 
     # Run simulation
     simulation_horizon = 365
