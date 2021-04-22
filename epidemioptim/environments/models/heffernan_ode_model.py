@@ -76,7 +76,7 @@ def vaccination_model(y: tuple,
     tuple
         Next states.
     """
-
+    
     S1, S2, S3, S4, E21, E22, E23, E31, E32, E33, E41, E42, E43, V11, V21, V31, V41, V12, V22, V32, V42, I2, I3, I4 = y
     T = S1 + S2 + S3 + S4 + E21 + E22 + E23 + E31 + E32 + E33 + E41 + E42 + E43 + V11 + V21 + V31 + V41 + V12 + V22 + V32 + V42 + I2 + I3 + I4
     infect = sum(c)*((beta[1]+beta[2]+beta[3])*(I2+I3+I4)/T)
@@ -150,7 +150,10 @@ class HeffernanOdeModel(BaseModel):
         self.step_list = [0, 71, 73, 76, 153, 173, 185, 201, 239, 244, 290, 295, 303, 305, 349, 353, 369, 370, 377, 381, 384, 391, 398, 402, 
                      404, 405, 409, 412, 418, 419, 425, 426, 431, 433, 440, 447, 454, 459, 461, 465, 468, 472 , 475, 481, 482, 488, 
                      489, 494, 496, 497, 501, 503, 510, 517, 524, 531, 552, 592, 609, 731]
-        self.step_number = len(self.step_list)
+        self.steps_number = len(self.step_list)
+        self.step = 0
+        self.t = 0
+        self.k = 0
         assert age_group in self._age_groups, 'age group should be one of ' + str(self._regions)
 
         self.age_group = age_group
@@ -181,10 +184,10 @@ class HeffernanOdeModel(BaseModel):
 
         grp = 0
         for i in self._age_groups:
-            self._all_internal_params_distribs[i] = dict(A=calculate_A_and_c(0, 1, self.contact_modifiers, self.perturbations_matrices, self.transition_matrices, 16)[0][grp],                                                         
+            self._all_internal_params_distribs[i] = dict(A=None,                                                         
                                                          alpha=[1, 2/3, 1/3, 0],
                                                          beta=[0.08, 0.04, 0.08, 0.008],
-                                                         c=calculate_A_and_c(0, 1, self.contact_modifiers, self.perturbations_matrices, self.transition_matrices, 16)[1][grp],
+                                                         c=None,
                                                          delta=[0, 0, 0, 0.0001],
                                                          gamma=[0, 0.2, 0.1, 1/15],
                                                          kappa=[0, 1/1.5, 1/1.5, 1/1.5],
@@ -271,11 +274,19 @@ class HeffernanOdeModel(BaseModel):
         """
         if current_state is None:
             current_state = self._get_current_state()
+        
+        num_classe = 15
+        if(self.t == self.step_list[self.step]):
+            self.k, self.step = k_value(self.t, self.step)
+            self.step += 1
+
+        mat = calculate_A_and_c(self.step, self.k, self.contact_modifiers, self.perturbations_matrices, self.transition_matrices)
+        self.current_internal_params['A'], self.current_internal_params['c'] = mat[0][num_classe], mat[1][num_classe]
 
         # Use the odeint library to run the ODE model.
-        z = odeint(self.internal_model, current_state, np.linspace(0, n, n + 1), args=self._get_model_params())
+        z = odeint(self.internal_model, current_state, np.linspace(0, 1, 2), args=(self._get_model_params()))
         self._set_current_state(current_state=z[-1].copy())  # save new current state
-
+        self.t += 1
         # format results
         if labelled_states:
             return self._convert_to_labelled_states(np.atleast_2d(z[1:]))
@@ -286,18 +297,20 @@ class HeffernanOdeModel(BaseModel):
 
 if __name__ == '__main__':
     # Get model
-    model = HeffernanOdeModel(age_group='40-44', stochastic=False)
+    model = HeffernanOdeModel(age_group='75+', stochastic=False)
 
     # Run simulation
-    simulation_horizon = 365
-    model_states = model.run_n_steps(n=simulation_horizon)
-
+    simulation_horizon = 380
+    model_states = []
+    for i in range(simulation_horizon):
+        model_state = model.run_n_steps()
+        model_states += model_state.tolist()
     # Plot
     time = np.arange(simulation_horizon)
     labels = model.internal_states_labels
 
     plot_stats(t=time,
-               states=model_states.transpose(),
+               states=np.array(model_states).transpose(),
                labels=labels,
                show=True)
 

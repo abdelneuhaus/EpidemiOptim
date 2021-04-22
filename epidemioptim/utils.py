@@ -699,7 +699,7 @@ def vaccination_active(path):
     return [x for y in _vaccineFull for x in y]
 
 
-def k_value(t):
+def k_value(t, step, scenario=0):
     """
     Compare the current timestep t to a list of int and return the appropriate kval
     """
@@ -709,7 +709,7 @@ def k_value(t):
                      489, 494, 496, 497, 501, 503, 510, 517, 524, 531, 552, 592, 609, 731]
     for i in range(0, len(time)):
         if int(t) == time[i]:
-            return kval[i]
+            return kval[i][scenario], step
         elif int(t) > time[i] and int(t) < time[i+1]:
-            return kval[i]
+            return kval[i][scenario], step
 
