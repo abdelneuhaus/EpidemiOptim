@@ -146,7 +146,7 @@ class HeffernanOdeModel(BaseModel):
         self._age_groups = ['0-4', '5-9', '10-14', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44', '45-49', '50-54', '55-59', '60-64', '65-69',  '70-74', '75+']
         self._pop_size = pd.read_excel(PATH_TO_DATA, sheet_name='population', skiprows=3, usecols=(2,2))
         self.pop_size = dict(zip(self._age_groups, (self._pop_size['Unnamed: 2'])))
-        self.transition_matrices = transition_matrices(self.pop_size, self.home, self.school, self.work, self.other)
+        self.transition_matrices = get_transition_matrices(self.pop_size, self.home, self.school, self.work, self.other)
         self.step_list = [0, 71, 73, 76, 153, 173, 185, 201, 239, 244, 290, 295, 303, 305, 349, 353, 369, 370, 377, 381, 384, 391, 398, 402, 
                      404, 405, 409, 412, 418, 419, 425, 426, 431, 433, 440, 447, 454, 459, 461, 465, 468, 472 , 475, 481, 482, 488, 
                      489, 494, 496, 497, 501, 503, 510, 517, 524, 531, 552, 592, 609, 731]
@@ -216,8 +216,8 @@ class HeffernanOdeModel(BaseModel):
                                                        V220=DiracDist(params=0, stochastic=self.stochastic),
                                                        V320=DiracDist(params=0, stochastic=self.stochastic),
                                                        V420=DiracDist(params=0, stochastic=self.stochastic),
-                                                       I20=DiracDist(params=167/3, stochastic=self.stochastic),
-                                                       I30=DiracDist(params=0, stochastic=self.stochastic),
+                                                       I20=DiracDist(params=10/6, stochastic=self.stochastic),
+                                                       I30=DiracDist(params=1/6, stochastic=self.stochastic),
                                                        I40=DiracDist(params=0, stochastic=self.stochastic)
                                                        )
             grp += 1                                           
@@ -287,7 +287,7 @@ class HeffernanOdeModel(BaseModel):
 
 if __name__ == '__main__':
     # Get model
-    model = HeffernanOdeModel(age_group='5-9', stochastic=False)
+    model = HeffernanOdeModel(age_group='70-74', stochastic=False)
 
     # Run simulation
     simulation_horizon = 365

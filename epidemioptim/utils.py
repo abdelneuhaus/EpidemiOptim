@@ -610,7 +610,7 @@ def get_kvalue(path):
 
 
 
-def transition_matrices(group_population, H, S, W, O):
+def get_transition_matrices(group_population, H, S, W, O):
     pop_size = [group_population[x] for x in group_population.keys()]
     population = np.matrix(duplicate_data(pop_size, 16))
     H1 = np.multiply(np.matrix(H).T,population)
