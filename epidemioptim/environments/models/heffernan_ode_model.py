@@ -134,7 +134,6 @@ class HeffernanOdeModel(BaseModel):
         self.p1 = get_text_file_data(PATH_TO_COMORBIDITY_MATRIX)
         self.p2 = get_text_file_data(PATH_TO_COMORBIDITY_MATRIX)
         self.p3 = [[0] + sub[1:] for sub in self.p1]
-        self.kval = get_kvalue(PATH_TO_DATA)
         self.work = get_text_file_data(PATH_TO_WORK_MATRIX)
         self.other = get_text_file_data(PATH_TO_OTHER_MATRIX)
         self.home = get_text_file_data(PATH_TO_HOME_MATRIX)
@@ -287,6 +286,7 @@ class HeffernanOdeModel(BaseModel):
         z = odeint(self.internal_model, current_state, np.linspace(0, 1, 2), args=(self._get_model_params()))
         self._set_current_state(current_state=z[-1].copy())  # save new current state
         self.t += 1
+
         # format results
         if labelled_states:
             return self._convert_to_labelled_states(np.atleast_2d(z[1:]))
@@ -300,11 +300,12 @@ if __name__ == '__main__':
     model = HeffernanOdeModel(age_group='75+', stochastic=False)
 
     # Run simulation
-    simulation_horizon = 380
+    simulation_horizon = 365
     model_states = []
     for i in range(simulation_horizon):
         model_state = model.run_n_steps()
         model_states += model_state.tolist()
+
     # Plot
     time = np.arange(simulation_horizon)
     labels = model.internal_states_labels

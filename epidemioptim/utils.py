@@ -587,10 +587,12 @@ def get_perturbations_matrices(path):
     sf6 = pertubations_matrices.iloc[97:113,1:17].values.tolist()
     of1 = pertubations_matrices.iloc[2:18,19:35].values.tolist()
     of2 = pertubations_matrices.iloc[21:37,19:35].values.tolist()
+    of3 = pertubations_matrices.iloc[40:56, 19:35].values.tolist()
     wf1 = pertubations_matrices.iloc[2:18,37:53].values.tolist()
     wf2 = pertubations_matrices.iloc[21:37,37:53].values.tolist()
+    wf3 = pertubations_matrices.iloc[40:56, 37:53].values.tolist()
     
-    return [sf1, sf2, sf3, sf4, sf5, sf6, of1, of2, wf1, wf2]
+    return [sf1, sf2, sf3, sf4, sf5, sf6, of1, of2, of3, wf1, wf2, wf3]
 
 
 def get_contact_modifiers(path):
@@ -604,9 +606,9 @@ def get_contact_modifiers(path):
     return [E1, E2, E3, E4, E5, Ebase]
 
 
-def get_kvalue(path):
-    kval = pd.read_excel(path, sheet_name='kvalFull')     # Need to pip install openpyxl
-    return kval.iloc[0:59,1:4].values.tolist()
+# def get_kvalue(path):
+#     kval = pd.read_excel(path, sheet_name='kvalFull')     # Need to pip install openpyxl
+#     return kval.iloc[0:59,1:4].values.tolist()
 
 
 
@@ -665,11 +667,15 @@ def calculate_A_and_c(step, k, contact_modifiers, perturbation_matrices, transit
         of = perturbation_matrices[6]
     elif (phase[step][1] == 2):
         of = perturbation_matrices[7]
+    elif (phase[step][1] == 3):
+        of = perturbation_matrices[8]
 
     if (phase[step][2] == 1):
-        wf = perturbation_matrices[8]
-    elif (phase[step][2] == 2):
         wf = perturbation_matrices[9]
+    elif (phase[step][2] == 2):
+        wf = perturbation_matrices[10]
+    elif (phase[step][2] == 3):
+        wf = perturbation_matrices[11]
 
     USc = transition_matrices[0] + np.multiply(np.matrix(wf), transition_matrices[2]) + np.multiply(np.matrix(of), transition_matrices[3]) + np.multiply(np.matrix(sf), transition_matrices[1])
     B = USc.sum(axis=0)
@@ -699,17 +705,18 @@ def vaccination_active(path):
     return [x for y in _vaccineFull for x in y]
 
 
-def k_value(t, step, scenario=0):
+def k_value(t, step, path=get_repo_path() + '/data/jane_model_data/kval.txt'):
     """
     Compare the current timestep t to a list of int and return the appropriate kval
     """
-    kval = get_kvalue(get_repo_path() + '/data/jane_model_data/ScenarioPlanFranceOne.xlsx')
+    k = get_text_file_data(path)
+    kval = [x for y in k for x in y]
     time = [0, 71, 73, 76, 153, 173, 185, 201, 239, 244, 290, 295, 303, 305, 349, 353, 369, 370, 377, 381, 384, 391, 398, 402, 
                      404, 405, 409, 412, 418, 419, 425, 426, 431, 433, 440, 447, 454, 459, 461, 465, 468, 472 , 475, 481, 482, 488, 
                      489, 494, 496, 497, 501, 503, 510, 517, 524, 531, 552, 592, 609, 731]
     for i in range(0, len(time)):
         if int(t) == time[i]:
-            return kval[i][scenario], step
+            return kval[i], step
         elif int(t) > time[i] and int(t) < time[i+1]:
-            return kval[i][scenario], step
+            return kval[i], step
 
