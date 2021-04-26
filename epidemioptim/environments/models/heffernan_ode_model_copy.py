@@ -1,12 +1,13 @@
 import numpy as np
 from numpy.core.fromnumeric import cumsum
 from scipy.integrate import odeint
+from odeintw import odeintw
 
 from epidemioptim.environments.models.base_model import BaseModel
 from epidemioptim.utils import *
 
 
-PATH_TO_DATA = get_repo_path() + '/data/jane_model_data/ScenarioPlanFranceOne.xlsx'
+PATH_TO_DATA = get_repo_path() + '/data/jane_model_data/ScenarioPlanFranceOne1.xlsx'
 PATH_TO_HOME_MATRIX = get_repo_path() + '/data/jane_model_data/contactHome.txt'
 PATH_TO_SCHOOL_MATRIX = get_repo_path() + '/data/jane_model_data/contactSchool.txt'
 PATH_TO_WORK_MATRIX = get_repo_path() + '/data/jane_model_data/contactWork.txt'
@@ -76,7 +77,6 @@ def vaccination_model(y: tuple,
     tuple
         Next states.
     """
-    
     S1, S2, S3, S4, E21, E22, E23, E31, E32, E33, E41, E42, E43, V11, V21, V31, V41, V12, V22, V32, V42, I2, I3, I4 = y
     T = S1 + S2 + S3 + S4 + E21 + E22 + E23 + E31 + E32 + E33 + E41 + E42 + E43 + V11 + V21 + V31 + V41 + V12 + V22 + V32 + V42 + I2 + I3 + I4
     infect = sum(c)*((beta[1]+beta[2]+beta[3])*(I2+I3+I4)/T)
@@ -121,6 +121,7 @@ def vaccination_model(y: tuple,
 
     dydt = [dS1dt, dS2dt, dS3dt, dS4dt, dE21dt, dE22dt, dE23dt, dE31dt, dE32dt, dE33dt, 
     dE41dt, dE42dt, dE43dt, dV11dt, dV12dt, dV31dt, dV41dt, dV21dt, dV22dt, dV32dt, dV42dt, dI2dt, dI3dt, dI4dt]
+
     return dydt
 
 
@@ -180,7 +181,6 @@ class HeffernanOdeModel(BaseModel):
         """
         Extract and define distributions of parameters for all age groups
         """
-
         grp = 0
         for i in self._age_groups:
             self._all_internal_params_distribs[i] = dict(A=None,                                                         
@@ -195,7 +195,7 @@ class HeffernanOdeModel(BaseModel):
                                                          p2=self.p2[grp],
                                                          p3=self.p3[grp],
                                                          rho=0.8944,
-                                                         sigma=sigma_calculation(0, self.active_vaccination, self.vaccination_coverage)
+                                                         sigma=0#sigma_calculation(0, self.active_vaccination, self.vaccination_coverage)
                                                          )
 
             self._all_initial_state_distribs[i] = dict(S20=DiracDist(params=0, stochastic=self.stochastic),
@@ -225,17 +225,40 @@ class HeffernanOdeModel(BaseModel):
             grp += 1                                           
 
 
+    def _reset_state(self):
+        """
+        Resets model state to initial state.
+        """
+        for i in self._age_groups:
+            self.current_state = dict(zip(self.internal_states_labels, np.array([self.initial_state[i]['{}0'.format(s)] for s in self.internal_states_labels])))
+
+
+    def _get_model_params(self) -> tuple:
+        """
+        Get current parameters of the model
+
+        Returns
+        -------
+        tuple
+            tuple of the model parameters in the order of the list of labels
+        """
+        for i in self._age_groups:
+            return tuple([self.current_internal_params[i][k] for k in self.internal_params_labels])
+
+
     def _sample_initial_state(self):
         """
         Samples an initial model state from its distribution (Dirac distributions if self.stochastic is False).
 
         """
         self.initial_state = dict()
-        for k in self._all_initial_state_distribs[self.age_group].keys():
-            self.initial_state[k] = self._all_initial_state_distribs[self.age_group][k].sample()
+        for i in self._age_groups:
+            self.initial_state[i] = dict()
+            for k in self._all_initial_state_distribs[i].keys():
+                self.initial_state[i][k] = self._all_initial_state_distribs[i][k].sample()
 
         # S10 is computed from other states, as the sum of all states equals the population size N
-        self.initial_state['S10'] = self.pop_size[self.age_group] - np.sum([self.initial_state['{}0'.format(s)] for s in self.internal_states_labels[1:]])
+            self.initial_state[i]['S10'] = self.pop_size[i] - np.sum([self.initial_state[i]['{}0'.format(s)] for s in self.internal_states_labels[1:]])
 
 
     def _sample_model_params(self):
@@ -244,10 +267,11 @@ class HeffernanOdeModel(BaseModel):
 
         """
         self.initial_internal_params = dict()
-        for k in self._all_internal_params_distribs[self.age_group].keys():
-            self.initial_internal_params[k] = self._all_internal_params_distribs[self.age_group][k]
+        for i in self._age_groups:
+            self.initial_internal_params[i] = dict()
+            for k in self._all_internal_params_distribs[i].keys():
+                self.initial_internal_params[i][k] = self._all_internal_params_distribs[i][k]
         self._reset_model_params()
-
 
 
     def run_n_steps(self, current_state=None, n=1, labelled_states=False):
@@ -273,17 +297,18 @@ class HeffernanOdeModel(BaseModel):
         """
         if current_state is None:
             current_state = self._get_current_state()
-        
-        num_classe = 15
+
         if(self.t == self.step_list[self.step]):
             self.k, self.step = k_value(self.t, self.step)
             self.step += 1
-
         mat = calculate_A_and_c(self.step, self.k, self.contact_modifiers, self.perturbations_matrices, self.transition_matrices)
-        self.current_internal_params['A'], self.current_internal_params['c'] = mat[0][num_classe], mat[1][num_classe]
-
+        grp_number = 0
+        for j in self.current_internal_params:
+            self.current_internal_params[j]['A'], self.current_internal_params[j]['c'] = mat[0][grp_number], mat[1][grp_number]
+            grp_number += 1
+        print(self.current_internal_params)
         # Use the odeint library to run the ODE model.
-        z = odeint(self.internal_model, current_state, np.linspace(0, n, n + 1), args=(self._get_model_params()))
+        z = odeintw(self.internal_model, current_state, np.linspace(0, n, n + 1), args=(self._get_model_params()))
         self._set_current_state(current_state=z[-1].copy())  # save new current state
         self.t += 1
 
@@ -297,10 +322,10 @@ class HeffernanOdeModel(BaseModel):
 
 if __name__ == '__main__':
     # Get model
-    model = HeffernanOdeModel(age_group='75+', stochastic=False)
+    model = HeffernanOdeModel(age_group='0-4', stochastic=False)
 
     # Run simulation
-    simulation_horizon = 365
+    simulation_horizon = 1
     model_states = []
     for i in range(simulation_horizon):
         model_state = model.run_n_steps()
