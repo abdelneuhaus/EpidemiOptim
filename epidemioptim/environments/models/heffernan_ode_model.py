@@ -1,6 +1,7 @@
 import numpy as np
 from numpy.core.fromnumeric import cumsum
 from scipy.integrate import odeint
+from odeintw import odeintw
 
 from epidemioptim.environments.models.base_model import BaseModel
 from epidemioptim.utils import *
@@ -79,8 +80,8 @@ def vaccination_model(y: tuple,
     
     S1, S2, S3, S4, E21, E22, E23, E31, E32, E33, E41, E42, E43, V11, V21, V31, V41, V12, V22, V32, V42, I2, I3, I4 = y
     T = S1 + S2 + S3 + S4 + E21 + E22 + E23 + E31 + E32 + E33 + E41 + E42 + E43 + V11 + V21 + V31 + V41 + V12 + V22 + V32 + V42 + I2 + I3 + I4
-    infect = sum(c)*((beta[1]+beta[2]+beta[3])*(I2+I3+I4))/(T*12)
-    print(S2)
+    infect = sum(c)*((beta[1]+beta[2]+beta[3])*(I2+I3+I4))/T
+
     # Susceptible compartments
     dS1dt = - sum(p1)*alpha[0]*A[0]*S1*infect + omega[1]*S2 - sigma*rho*S1 + omega[1]*V11
     dS2dt = - sum(p2)*alpha[1]*A[1]*S2*infect + omega[2]*S3 - omega[1]*S2 - sigma*rho*S2 + gamma[1]*I2 + omega[2]*V21
@@ -301,7 +302,7 @@ if __name__ == '__main__':
     model = HeffernanOdeModel(age_group='0-4', stochastic=False)
 
     # Run simulation
-    simulation_horizon = 1
+    simulation_horizon = 365
     model_states = []
     for i in range(simulation_horizon):
         model_state = model.run_n_steps()
@@ -311,8 +312,8 @@ if __name__ == '__main__':
     time = np.arange(simulation_horizon)
     labels = model.internal_states_labels
 
-    # plot_stats(t=time,
-    #            states=np.array(model_states).transpose(),
-    #            labels=labels,
-    #            show=True)
+    plot_stats(t=time,
+               states=np.array(model_states).transpose(),
+               labels=labels,
+               show=True)
 
