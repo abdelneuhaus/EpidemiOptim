@@ -606,9 +606,9 @@ def get_contact_modifiers(path):
     return [E1, E2, E3, E4, E5, Ebase]
 
 
-# def get_kvalue(path):
-#     kval = pd.read_excel(path, sheet_name='kvalFull')     # Need to pip install openpyxl
-#     return kval.iloc[0:59,1:4].values.tolist()
+def get_kvalue(path):
+    kval = pd.read_excel(path, sheet_name='kvalFull')     # Need to pip install openpyxl
+    return kval.iloc[0:59,1:4].values.tolist()
 
 
 
@@ -706,11 +706,11 @@ def vaccination_active(path):
     return [x for y in _vaccineFull for x in y]
 
 
-def k_value(t, step, path=get_repo_path() + '/data/jane_model_data/kval.txt'):
+def k_value(t, step, path=get_repo_path() + '/data/jane_model_data/ScenarioPlanFranceOne.xlsx'):
     """
     Compare the current timestep t to a list of int and return the appropriate kval
     """
-    k = get_text_file_data(path)
+    k = get_kvalue(path)
     kval = [x for y in k for x in y]
     time = [0, 71, 73, 76, 153, 173, 185, 201, 239, 244, 290, 295, 303, 305, 349, 353, 369, 370, 377, 381, 384, 391, 398, 402, 
                      404, 405, 409, 412, 418, 419, 425, 426, 431, 433, 440, 447, 454, 459, 461, 465, 468, 472 , 475, 481, 482, 488, 

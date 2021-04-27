@@ -47,33 +47,31 @@ def vaccination_model(y: tuple,
        V2i: # vaccinated people with two doses, i being the immunity level
     t: int
        Timestep.
-    data: dict
-          Has parameters of all age groups. These parameters are:
-          p1: tuple
-              Probability to go to mild class for an age group.
-          p2: tuple
-              Probability to go to moderate class for an age group.
-          p3: tuple
-              Probability to go to severe class for an age group.        
-          alpha: tuple
-                 Susceptibilty of individuals from Sin (i immunity status, n age group).
-          kappa: tuple
-                 Rates of progress through the pre-infectious period of infection.
-          gamma: tuple
-                 Recovery rate of infected individuals from Ijm (j immunity status, m age group).
-          rho: float
-               Vaccination efficacy for the first dose.
-          omega: tuple
-                 Waning rate of immunity of individuals from Sin (i immunity status, n age group).
-          delta: tuple
-                 Disease-induced mortality rate of infected individuals from Ijm (j immunity status, m age group).
-          A: tuple
-             Per capita activity counts of individuals in age group n
-          c: tuple
-             Mixing matrix between individuals in age group a and age groupe n, modified given mitigation, strategy, PPE, 
-             social distancing, hand washing compliance (k-value)
-          sigma: float
-                 Vaccination rate.
+    p1: tuple
+        Probability to go to mild class for an age group.
+    p2: tuple
+        Probability to go to moderate class for an age group.
+    p3: tuple
+        Probability to go to severe class for an age group.        
+    alpha: tuple
+           Susceptibilty of individuals from Sin (i immunity status, n age group).
+    kappa: tuple
+           Rates of progress through the pre-infectious period of infection.
+    gamma: tuple
+           Recovery rate of infected individuals from Ijm (j immunity status, m age group).
+    rho: float
+         Vaccination efficacy for the first dose.
+    omega: tuple
+           Waning rate of immunity of individuals from Sin (i immunity status, n age group).
+    delta: tuple
+           Disease-induced mortality rate of infected individuals from Ijm (j immunity status, m age group).
+    A: tuple
+       Per capita activity counts of individuals in age group n
+    c: tuple
+       Mixing matrix between individuals in age group a and age groupe n, modified given mitigation, strategy, PPE, 
+       social distancing, hand washing compliance (k-value)
+    sigma: float
+           Vaccination rate.
     Returns
     -------
     tuple

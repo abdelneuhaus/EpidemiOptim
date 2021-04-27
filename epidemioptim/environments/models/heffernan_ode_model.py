@@ -219,8 +219,8 @@ class HeffernanOdeModel(BaseModel):
                                                        V220=DiracDist(params=0, stochastic=self.stochastic),
                                                        V320=DiracDist(params=0, stochastic=self.stochastic),
                                                        V420=DiracDist(params=0, stochastic=self.stochastic),
-                                                       I20=DiracDist(params=1000, stochastic=self.stochastic),
-                                                       I30=DiracDist(params=100, stochastic=self.stochastic),
+                                                       I20=DiracDist(params=10/6, stochastic=self.stochastic),
+                                                       I30=DiracDist(params=1/6, stochastic=self.stochastic),
                                                        I40=DiracDist(params=0, stochastic=self.stochastic)
                                                        )
             grp += 1                                           
@@ -279,9 +279,8 @@ class HeffernanOdeModel(BaseModel):
         if(self.t == self.step_list[self.step]):
             self.k, self.step = k_value(self.t, self.step)
             self.step += 1
-
+        #print("step", self.step, "k", self.k, "t", self.t)
         mat = calculate_A_and_c(self.step, self.k, self.contact_modifiers, self.perturbations_matrices, self.transition_matrices)
-        #print(mat[1])
         self.current_internal_params['A'], self.current_internal_params['c'] = mat[0][num_classe], mat[1][num_classe]
 
         # Use the odeint library to run the ODE model.
