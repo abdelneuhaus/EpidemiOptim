@@ -24,6 +24,7 @@ def vaccination_model(y: tuple,
                       beta: tuple, 
                       c: tuple,
                       delta: tuple,
+                      epsilon: float,
                       gamma: tuple,
                       kappa: tuple, 
                       omega: tuple,
@@ -80,43 +81,45 @@ def vaccination_model(y: tuple,
     origin = y.T
     S1, S2, S3, S4 = origin[0], origin[1], origin[2], origin[3]
     E21, E22, E23 =  origin[4], origin[5], origin[6]
-    #print(E21)
     E31, E32, E33 =  origin[7], origin[8], origin[9]
     E41, E42, E43 = origin[10], origin[11], origin[12]
     V11, V21, V31, V41 = origin[13], origin[14], origin[15], origin[16]
     V12, V22, V32, V42 = origin[17], origin[18], origin[19], origin[20]
     I2, I3, I4 = origin[21], origin[22], origin[23]
+
+    # Infect calculation
     T = S1 + S2 + S3 + S4 + E21 + E22 + E23 + E31 + E32 + E33 + E41 + E42 + E43 + V11 + V21 + V31 + V41 + V12 + V22 + V32 + V42 + I2 + I3 + I4
     Xm = sum(np.multiply(beta, np.array((I2,I3,I4)).T).T)
     Ym = np.divide(Xm, T)
-    infect = np.dot(np.array(c), Ym)
+    infect = np.matmul(np.array(c).T, Ym.T)
 
     # Susceptible compartments
     dS1dt = - sum(p1)*alpha[0]*A[0]*S1*infect + omega[1]*S2 - sigma*rho*S1 + omega[1]*V11
+    print(dS1dt)
     dS2dt = - sum(p2)*alpha[1]*A[1]*S2*infect + omega[2]*S3 - omega[1]*S2 - sigma*rho*S2 + gamma[1]*I2 + omega[2]*V21
     dS3dt = - (p3[1]+p3[2])*alpha[2]*A[2]*S3*infect + omega[3]*S4 - omega[2]*S3 - sigma*rho*S3 + gamma[2]*I3 + omega[3]*(V31+V41+V12+V22+V32+V42)
     dS4dt = - omega[3]*S4 - sigma*rho*S4 + gamma[3]*I4
 
     # Exposed compartments
     # To I2
-    dE21dt = p1[0]*alpha[0]*A[0]*S1*infect + p2[0]*alpha[1]*A[1]*S2*infect + p2[0]*alpha[1]*A[1]*V11*infect - kappa[1]*E21
+    dE21dt = p1[0]*alpha[0]*A[0]*S1*infect + p2[0]*alpha[1]*A[1]*S2*infect + p2[0]*epsilon*alpha[1]*A[1]*V11*infect - kappa[1]*E21
     dE22dt = kappa[1]*E21 - kappa[2]*E22
     dE23dt = kappa[2]*E22 - kappa[3]*E23
 
     # To I3
-    dE31dt = p1[1]*alpha[0]*A[0]*S1*infect + p2[1]*alpha[1]*A[1]*S2*infect + p3[1]*alpha[2]*A[2]*S3*infect + p2[1]*alpha[1]*A[1]*V11*infect + p3[1]*alpha[2]*A[2]*V21*infect - kappa[1]*E31
+    dE31dt = p1[1]*alpha[0]*A[0]*S1*infect + p2[1]*alpha[1]*A[1]*S2*infect + p3[1]*alpha[2]*A[2]*S3*infect + p2[1]*epsilon*alpha[1]*A[1]*V11*infect + p3[1]*epsilon*alpha[2]*A[2]*V21*infect - kappa[1]*E31
     dE32dt = kappa[1]*E31 - kappa[2]*E32
     dE33dt = kappa[2]*E32 - kappa[3]*E33
 
     # To I4
-    dE41dt = p1[2]*alpha[0]*A[0]*S1*infect + p2[2]*alpha[1]*A[1]*S2*infect + p3[2]*alpha[2]*A[2]*S3*infect + p2[2]*alpha[1]*A[1]*V11*infect + p3[2]*alpha[2]*A[2]*V21*infect - kappa[1]*E41
+    dE41dt = p1[2]*alpha[0]*A[0]*S1*infect + p2[2]*alpha[1]*A[1]*S2*infect + p3[2]*alpha[2]*A[2]*S3*infect + p2[2]*epsilon*alpha[1]*A[1]*V11*infect + p3[2]*epsilon*alpha[2]*A[2]*V21*infect - kappa[1]*E41
     dE42dt = kappa[1]*E41 - kappa[2]*E42
     dE43dt = kappa[2]*E42 - kappa[3]*E43 
 
 
     # Vaccinated compartments
-    dV11dt = sigma*rho*S1 - sigma*rho*V11 - sum(p2)*alpha[1]*A[1]*V11*infect - omega[1]*V11
-    dV21dt = sigma*rho*S2 - sigma*rho*V21 - (p3[1]+p3[2])*alpha[2]*A[2]*V21*infect - omega[2]*V21
+    dV11dt = sigma*rho*S1 - sigma*rho*V11 - sum(p2)*epsilon*alpha[1]*A[1]*V11*infect - omega[1]*V11
+    dV21dt = sigma*rho*S2 - sigma*rho*V21 - (p3[1]+p3[2])*epsilon*alpha[2]*A[2]*V21*infect - omega[2]*V21
     dV31dt = sigma*rho*S3 - sigma*rho*V31 - omega[3]*V31
     dV41dt = sigma*rho*S4 - sigma*rho*V41 - omega[3]*V41
 
@@ -160,10 +163,9 @@ class HeffernanOdeModel(BaseModel):
         self.step_list = [0, 71, 73, 76, 153, 173, 185, 201, 239, 244, 290, 295, 303, 305, 349, 353, 369, 370, 377, 381, 384, 391, 398, 402, 
                      404, 405, 409, 412, 418, 419, 425, 426, 431, 433, 440, 447, 454, 459, 461, 465, 468, 472 , 475, 481, 482, 488, 
                      489, 494, 496, 497, 501, 503, 510, 517, 524, 531, 552, 592, 609, 731]
-        self.steps_number = len(self.step_list)
         self.step = 0
         self.t = 0
-        self.k = 0
+        self.k = 1
         assert age_group in self._age_groups, 'age group should be one of ' + str(self._age_groups)
 
         self.age_group = age_group
@@ -175,7 +177,7 @@ class HeffernanOdeModel(BaseModel):
         self.define_params_and_initial_state_distributions()
 
         # Sample initial conditions and initial model parameters
-        internal_params_labels = ['A', 'alpha', 'beta', 'c', 'delta', 'gamma', 'kappa', 'omega', 'p1', 'p2', 'p3', 'rho', 'sigma']
+        internal_params_labels = ['A', 'alpha', 'beta', 'c', 'delta', 'epsilon', 'gamma', 'kappa', 'omega', 'p1', 'p2', 'p3', 'rho', 'sigma']
 
         # Define ODE model
         self.internal_model = vaccination_model
@@ -197,6 +199,7 @@ class HeffernanOdeModel(BaseModel):
                                                          beta=np.array(duplicate_data([0.04, 0.08, 0.008], 16)),
                                                          c=None,
                                                          delta=np.array(duplicate_data([0, 0, 0, 0.0001], 16)).T,
+                                                         epsilon=0.5,
                                                          gamma=np.array(duplicate_data([0, 0.2, 0.1, 1/15], 16)).T,
                                                          kappa=np.array(duplicate_data([0, 1/1.5, 1/1.5, 1/1.5], 16)).T,
                                                          omega=np.array(duplicate_data([0, 1/365, 1/365, 1/365], 16)).T,
@@ -227,8 +230,8 @@ class HeffernanOdeModel(BaseModel):
                                                        V220=DiracDist(params=0, stochastic=self.stochastic),
                                                        V320=DiracDist(params=0, stochastic=self.stochastic),
                                                        V420=DiracDist(params=0, stochastic=self.stochastic),
-                                                       I20=DiracDist(params=10/6, stochastic=self.stochastic),
-                                                       I30=DiracDist(params=1/6, stochastic=self.stochastic),
+                                                       I20=DiracDist(params=0, stochastic=self.stochastic),
+                                                       I30=DiracDist(params=0, stochastic=self.stochastic),
                                                        I40=DiracDist(params=0, stochastic=self.stochastic)
                                                        )
 
@@ -260,7 +263,6 @@ class HeffernanOdeModel(BaseModel):
 
         """
         state = []
-        #print(self.current_state)
         for i in self._age_groups:
             state.append([self.current_state[i]['{}'.format(s)] for s in self.internal_states_labels])
         return state
@@ -289,7 +291,9 @@ class HeffernanOdeModel(BaseModel):
             self.initial_state[i] = dict()
             for k in self._all_initial_state_distribs[i].keys():
                 self.initial_state[i][k] = self._all_initial_state_distribs[i][k].sample()
-
+                if i in ['20-24', '25-29', '30-34', '35-39', '40-44', '45-49']:
+                    self.initial_state[i]['I20'] = 10/6
+                    self.initial_state[i]['I30'] = 1/6
         # S10 is computed from other states, as the sum of all states equals the population size N
             self.initial_state[i]['S10'] = self.pop_size[i] - np.sum([self.initial_state[i]['{}0'.format(s)] for s in self.internal_states_labels[1:]])
 
@@ -341,11 +345,11 @@ class HeffernanOdeModel(BaseModel):
         """
         if current_state is None:
             current_state = np.array(self._get_current_state())
-        if(self.t == self.step_list[self.step]):
-            self.k, self.step = k_value(self.t, self.step)
-            self.step += 1
         A_c = calculate_A_and_c(self.step, self.k, self.contact_modifiers, self.perturbations_matrices, self.transition_matrices)
         self.current_internal_params['A'], self.current_internal_params['c'] = np.array(A_c[0]).T, A_c[1]
+        if(self.t == self.step_list[self.step]):
+            self.k = k_value(self.t)
+            self.step += 1    
         # Use the odeint library to run the ODE model
         z = odeintw(self.internal_model, current_state, np.linspace(0, 1, 2), args=(self._get_model_params()))
         self._set_current_state(current_state=z[-1].copy())  # save new current state
@@ -358,23 +362,24 @@ class HeffernanOdeModel(BaseModel):
             return np.atleast_2d(z[1:])
 
 
+
 if __name__ == '__main__':
     # Get model
     model = HeffernanOdeModel(age_group='0-4', stochastic=False)
 
     # Run simulation
-    simulation_horizon = 365
+    simulation_horizon = 1
     model_states = []
     for i in range(simulation_horizon):
         model_state = model.run_n_steps()
         model_states += model_state.tolist()
-
+    
     # Plot
     time = np.arange(simulation_horizon)
-    labels = model.internal_states_labels
+    labels = ['0-4', '5-9', '10-14', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44', '45-49', '50-54', '55-59', '60-64', '65-69',  '70-74', '75+']
 
-    plot_stats(t=time,
-              states=np.array(model_states).transpose(),
-              labels=labels,
-              show=True)
+    # plot_stats(t=time,
+    #           states=np.array(model_states).transpose()[23],
+    #           labels=labels,
+    #           show=True)
 

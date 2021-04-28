@@ -678,14 +678,13 @@ def calculate_A_and_c(step, k, contact_modifiers, perturbation_matrices, transit
         wf = perturbation_matrices[11]
 
     USc = transition_matrices[0] + np.multiply(np.matrix(wf), transition_matrices[1]) + np.multiply(np.matrix(of), transition_matrices[2]) + np.multiply(np.matrix(sf), transition_matrices[3])
-    #print(USc)
     B = USc.sum(axis=0)
     _con = np.multiply(USc, k)
     _A = _con.sum(axis=0)
     _c = np.divide(_con, np.tile(_A, (16,1)))
     _A = np.tile(_A, (4,1))
     A, c = _A.T.tolist(), _c.tolist()
-    
+    #print(c)
     return [A, c]
 
 
@@ -706,7 +705,7 @@ def vaccination_active(path):
     return [x for y in _vaccineFull for x in y]
 
 
-def k_value(t, step, path=get_repo_path() + '/data/jane_model_data/ScenarioPlanFranceOne.xlsx'):
+def k_value(t, path=get_repo_path() + '/data/jane_model_data/ScenarioPlanFranceOne.xlsx'):
     """
     Compare the current timestep t to a list of int and return the appropriate kval
     """
@@ -717,7 +716,21 @@ def k_value(t, step, path=get_repo_path() + '/data/jane_model_data/ScenarioPlanF
                      489, 494, 496, 497, 501, 503, 510, 517, 524, 531, 552, 592, 609, 731]
     for i in range(0, len(time)):
         if int(t) == time[i]:
-            return kval[i], step
+            return kval[i]
         elif int(t) > time[i] and int(t) < time[i+1]:
-            return kval[i], step
+            return kval[i]
+
+
+def nu_value(t, path=get_repo_path() + '/data/jane_model_data/ScenarioPlanFranceOne.xlsx'):
+    vocInfect = 0.5
+    time = [0, 71, 73, 76, 153, 173, 185, 201, 239, 244, 290, 295, 303, 305, 349, 353, 369, 370, 377, 381, 384, 391, 398, 402, 
+                     404, 405, 409, 412, 418, 419, 425, 426, 431, 433, 440, 447, 454, 459, 461, 465, 468, 472 , 475, 481, 482, 488, 
+                     489, 494, 496, 497, 501, 503, 510, 517, 524, 531, 552, 592, 609, 731]
+    _vocpercent = pd.read_excel(path, sheet_name='VOC France', skiprows=0, usecols=(3,3)).values.tolist()
+    vocpercent = [ x for y in _vocpercent for x in y if str(x) != 'nan']
+    for i in range(0, len(time)):
+        if int(t) == time[i]:
+            return vocInfect*vocpercent[i]/100
+        elif int(t) > time[i] and int(t) < time[i+1]:
+            return vocInfect*vocpercent[i]/100
 
