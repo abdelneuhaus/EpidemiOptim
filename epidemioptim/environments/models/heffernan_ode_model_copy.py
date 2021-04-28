@@ -77,66 +77,62 @@ def vaccination_model(y: tuple,
     tuple
         Next states.
     """
-    dS1dt, dS2dt, dS3dt, dS4dt = np.zeros((1,16)), np.zeros((1,16)), np.zeros((1,16)), np.zeros((1,16))
-    dE21dt, dE22dt, dE23dt = np.zeros((1,16)), np.zeros((1,16)), np.zeros((1,16))
-    dE31dt, dE32dt, dE33dt = np.zeros((1,16)), np.zeros((1,16)), np.zeros((1,16))
-    dE41dt, dE42dt, dE43dt = np.zeros((1,16)), np.zeros((1,16)), np.zeros((1,16))
-    dV11dt, dV12dt, dV31dt, dV41dt = np.zeros((1,16)), np.zeros((1,16)), np.zeros((1,16)), np.zeros((1,16))
-    dV21dt, dV22dt, dV32dt, dV42dt = np.zeros((1,16)), np.zeros((1,16)), np.zeros((1,16)), np.zeros((1,16))
-    dI2dt, dI3dt, dI4dt = np.zeros((1,16)), np.zeros((1,16)), np.zeros((1,16))
+    origin = y.T
+    S1, S2, S3, S4 = origin[0], origin[1], origin[2], origin[3]
+    E21, E22, E23 =  origin[4], origin[5], origin[6]
+    #print(E21)
+    E31, E32, E33 =  origin[7], origin[8], origin[9]
+    E41, E42, E43 = origin[10], origin[11], origin[12]
+    V11, V21, V31, V41 = origin[13], origin[14], origin[15], origin[16]
+    V12, V22, V32, V42 = origin[17], origin[18], origin[19], origin[20]
+    I2, I3, I4 = origin[21], origin[22], origin[23]
+    T = S1 + S2 + S3 + S4 + E21 + E22 + E23 + E31 + E32 + E33 + E41 + E42 + E43 + V11 + V21 + V31 + V41 + V12 + V22 + V32 + V42 + I2 + I3 + I4
+    Xm = sum(np.multiply(beta, np.array((I2,I3,I4)).T).T)
+    Ym = np.divide(Xm, T)
+    infect = np.dot(np.array(c), Ym)
 
-    for i in range(16):
-        S1, S2, S3, S4 = y[i][0], y[i][1], y[i][2], y[i][3]
-        E21, E22, E23 =  y[i][4], y[i][5], y[i][6]
-        E31, E32, E33 =  y[i][7], y[i][8], y[i][9]
-        E41, E42, E43 = y[i][10], y[i][11], y[i][12]
-        V11, V21, V31, V41 = y[i][13], y[i][14], y[i][15], y[i][16]
-        V12, V22, V32, V42 = y[i][17], y[i][18], y[i][19], y[i][20]
-        I2, I3, I4 = y[i][21], y[i][22], y[i][23]
-        T = S1 + S2 + S3 + S4 + E21 + E22 + E23 + E31 + E32 + E33 + E41 + E42 + E43 + V11 + V21 + V31 + V41 + V12 + V22 + V32 + V42 + I2 + I3 + I4
-        infect = sum(c[i])*((beta[1]+beta[2]+beta[3])*(I2+I3+I4)/T)
-        #print(infect)
-        # Susceptible compartments
-        dS1dt[0][i] = - sum(p1[i])*alpha[0]*A[i][0]*S1*infect + omega[1]*S2 - sigma*rho*S1 + omega[1]*V11
-        print("S1", S1, "S2", S2)
-        dS2dt[0][i] = - sum(p2[i])*alpha[1]*A[i][1]*S2*infect + omega[2]*S3 - omega[1]*S2 - sigma*rho*S2 + gamma[1]*I2 + omega[2]*V21
-        dS3dt[0][i] = - (p3[i][1]+p3[i][2])*alpha[2]*A[i][2]*S3*infect + omega[3]*S4 - omega[2]*S3 - sigma*rho*S3 + gamma[2]*I3 + omega[3]*(V31+V41+V12+V22+V32+V42)
-        dS4dt[0][i] = - omega[3]*S4 - sigma*rho*S4 + gamma[3]*I4
+    # Susceptible compartments
+    dS1dt = - sum(p1)*alpha[0]*A[0]*S1*infect + omega[1]*S2 - sigma*rho*S1 + omega[1]*V11
+    dS2dt = - sum(p2)*alpha[1]*A[1]*S2*infect + omega[2]*S3 - omega[1]*S2 - sigma*rho*S2 + gamma[1]*I2 + omega[2]*V21
+    dS3dt = - (p3[1]+p3[2])*alpha[2]*A[2]*S3*infect + omega[3]*S4 - omega[2]*S3 - sigma*rho*S3 + gamma[2]*I3 + omega[3]*(V31+V41+V12+V22+V32+V42)
+    dS4dt = - omega[3]*S4 - sigma*rho*S4 + gamma[3]*I4
 
-        # Vaccinated compartments
-        dV11dt[0][i] = sigma*rho*S1 - sigma*rho*V11 - sum(p2[i])*alpha[1]*A[i][1]*V11*infect - omega[1]*V11
-        dV21dt[0][i] = sigma*rho*S2 - sigma*rho*V21 - (p3[i][1]+p3[i][2])*alpha[2]*A[i][2]*V21*infect - omega[2]*V21
-        dV31dt[0][i] = sigma*rho*S3 - sigma*rho*V31 - omega[3]*V31
-        dV41dt[0][i] = sigma*rho*S4 - sigma*rho*V41 - omega[3]*V41
+    # Exposed compartments
+    # To I2
+    dE21dt = p1[0]*alpha[0]*A[0]*S1*infect + p2[0]*alpha[1]*A[1]*S2*infect + p2[0]*alpha[1]*A[1]*V11*infect - kappa[1]*E21
+    dE22dt = kappa[1]*E21 - kappa[2]*E22
+    dE23dt = kappa[2]*E22 - kappa[3]*E23
 
-        dV12dt[0][i] = sigma*rho*V11 - omega[3]*V12
-        dV22dt[0][i] = sigma*rho*V21 - omega[3]*V22
-        dV32dt[0][i] = sigma*rho*V31 - omega[3]*V32
-        dV42dt[0][i] = sigma*rho*V41 - omega[3]*V42
+    # To I3
+    dE31dt = p1[1]*alpha[0]*A[0]*S1*infect + p2[1]*alpha[1]*A[1]*S2*infect + p3[1]*alpha[2]*A[2]*S3*infect + p2[1]*alpha[1]*A[1]*V11*infect + p3[1]*alpha[2]*A[2]*V21*infect - kappa[1]*E31
+    dE32dt = kappa[1]*E31 - kappa[2]*E32
+    dE33dt = kappa[2]*E32 - kappa[3]*E33
 
-        # Exposed compartments
-        # To I2
-        dE21dt[0][i] = p1[i][0]*alpha[0]*A[i][0]*S1*infect + p2[i][0]*alpha[1]*A[i][1]*S2*infect + p2[i][0]*alpha[1]*A[i][1]*V11*infect - kappa[1]*E21
-        dE22dt[0][i] = kappa[1]*E21 - kappa[2]*E22
-        dE23dt[0][i] = kappa[2]*E22 - kappa[3]*E23
+    # To I4
+    dE41dt = p1[2]*alpha[0]*A[0]*S1*infect + p2[2]*alpha[1]*A[1]*S2*infect + p3[2]*alpha[2]*A[2]*S3*infect + p2[2]*alpha[1]*A[1]*V11*infect + p3[2]*alpha[2]*A[2]*V21*infect - kappa[1]*E41
+    dE42dt = kappa[1]*E41 - kappa[2]*E42
+    dE43dt = kappa[2]*E42 - kappa[3]*E43 
 
-        # To I3
-        dE31dt[0][i] = p1[i][1]*alpha[0]*A[i][0]*S1*infect + p2[i][1]*alpha[1]*A[i][1]*S2*infect + p3[i][1]*alpha[2]*A[i][2]*S3*infect + p2[i][1]*alpha[1]*A[i][1]*V11*infect + p3[i][1]*alpha[2]*A[i][2]*V21*infect - kappa[1]*E31
-        dE32dt[0][i] = kappa[1]*E31 - kappa[2]*E32
-        dE33dt[0][i] = kappa[2]*E32 - kappa[3]*E33
 
-        # To I4
-        dE41dt[0][i] = p1[i][2]*alpha[0]*A[i][0]*S1*infect + p2[i][2]*alpha[1]*A[i][1]*S2*infect + p3[i][2]*alpha[2]*A[i][2]*S3*infect + p2[i][2]*alpha[1]*A[i][1]*V11*infect + p3[i][2]*alpha[2]*A[i][2]*V21*infect - kappa[1]*E41
-        dE42dt[0][i] = kappa[1]*E41 - kappa[2]*E42
-        dE43dt[0][i] = kappa[2]*E42 - kappa[3]*E43            
+    # Vaccinated compartments
+    dV11dt = sigma*rho*S1 - sigma*rho*V11 - sum(p2)*alpha[1]*A[1]*V11*infect - omega[1]*V11
+    dV21dt = sigma*rho*S2 - sigma*rho*V21 - (p3[1]+p3[2])*alpha[2]*A[2]*V21*infect - omega[2]*V21
+    dV31dt = sigma*rho*S3 - sigma*rho*V31 - omega[3]*V31
+    dV41dt = sigma*rho*S4 - sigma*rho*V41 - omega[3]*V41
 
-        # Infected compartments
-        dI2dt[0][i] = kappa[3]*E23 - delta[1]*I2 - gamma[1]*I2
-        dI3dt[0][i] = kappa[3]*E33 - delta[2]*I3 - gamma[2]*I3
-        dI4dt[0][i] = kappa[3]*E43 - delta[3]*I4 - gamma[3]*I4 
+    dV12dt = sigma*rho*V11 - omega[3]*V12
+    dV22dt = sigma*rho*V21 - omega[3]*V22
+    dV32dt = sigma*rho*V31 - omega[3]*V32
+    dV42dt = sigma*rho*V41 - omega[3]*V42
 
-    dydt = dS1dt, dS2dt, dS3dt, dS4dt, dE21dt, dE22dt, dE23dt, dE31dt, dE32dt, dE33dt, dE41dt, dE42dt, dE43dt, dV11dt, dV12dt, dV31dt, dV41dt, dV21dt, dV22dt, dV32dt, dV42dt, dI2dt, dI3dt, dI4dt
-    return dydt
+              
+    # Infected compartments
+    dI2dt = kappa[3]*E23 - delta[1]*I2 - gamma[1]*I2
+    dI3dt = kappa[3]*E33 - delta[2]*I3 - gamma[2]*I3
+    dI4dt = kappa[3]*E43 - delta[3]*I4 - gamma[3]*I4 
+
+    dydt = np.array((dS1dt, dS2dt, dS3dt, dS4dt, dE21dt, dE22dt, dE23dt, dE31dt, dE32dt, dE33dt, dE41dt, dE42dt, dE43dt, dV11dt, dV12dt, dV31dt, dV41dt, dV21dt, dV22dt, dV32dt, dV42dt, dI2dt, dI3dt, dI4dt))
+    return dydt.T
 
 
 
@@ -197,16 +193,16 @@ class HeffernanOdeModel(BaseModel):
         """
         for i in self._age_groups:
             self._all_internal_params_distribs[i] = dict(A=None,                                                         
-                                                         alpha=[1, 2/3, 1/3, 0],
-                                                         beta=[0.08, 0.04, 0.08, 0.008],
+                                                         alpha=np.array(duplicate_data([1, 2/3, 1/3, 0], 16)).T,
+                                                         beta=np.array(duplicate_data([0.04, 0.08, 0.008], 16)),
                                                          c=None,
-                                                         delta=[0, 0, 0, 0.0001],
-                                                         gamma=[0, 0.2, 0.1, 1/15],
-                                                         kappa=[0, 1/1.5, 1/1.5, 1/1.5],
-                                                         omega=[0, 1/365, 1/365, 1/365],
-                                                         p1=self.p1,
-                                                         p2=self.p2,
-                                                         p3=self.p3,
+                                                         delta=np.array(duplicate_data([0, 0, 0, 0.0001], 16)).T,
+                                                         gamma=np.array(duplicate_data([0, 0.2, 0.1, 1/15], 16)).T,
+                                                         kappa=np.array(duplicate_data([0, 1/1.5, 1/1.5, 1/1.5], 16)).T,
+                                                         omega=np.array(duplicate_data([0, 1/365, 1/365, 1/365], 16)).T,
+                                                         p1=np.array(self.p1).T,
+                                                         p2=np.array(self.p2).T,
+                                                         p3=np.array(self.p3).T,
                                                          rho=0.8944,
                                                          sigma=0#sigma_calculation(0, self.active_vaccination, self.vaccination_coverage)
                                                          )
@@ -344,13 +340,13 @@ class HeffernanOdeModel(BaseModel):
 
         """
         if current_state is None:
-            current_state = self._get_current_state()
+            current_state = np.array(self._get_current_state())
         if(self.t == self.step_list[self.step]):
             self.k, self.step = k_value(self.t, self.step)
             self.step += 1
         A_c = calculate_A_and_c(self.step, self.k, self.contact_modifiers, self.perturbations_matrices, self.transition_matrices)
-        self.current_internal_params['A'], self.current_internal_params['c'] = A_c[0], A_c[1]
-        # Use the odeint library to run the ODE model.
+        self.current_internal_params['A'], self.current_internal_params['c'] = np.array(A_c[0]).T, A_c[1]
+        # Use the odeint library to run the ODE model
         z = odeintw(self.internal_model, current_state, np.linspace(0, 1, 2), args=(self._get_model_params()))
         self._set_current_state(current_state=z[-1].copy())  # save new current state
         self.t += 1
@@ -373,7 +369,7 @@ if __name__ == '__main__':
     model = HeffernanOdeModel(age_group='0-4', stochastic=False)
 
     # Run simulation
-    simulation_horizon = 1
+    simulation_horizon = 365
     model_states = []
     for i in range(simulation_horizon):
         model_state = model.run_n_steps()
@@ -383,11 +379,11 @@ if __name__ == '__main__':
     time = np.arange(simulation_horizon)
     labels = model.internal_states_labels
 
-    data = plotting(model_states, 15, 23)
-    plt.plot(time, data)
-    plt.show()
-    # plot_stats(t=time,
-    #           states=np.array(model_states).transpose(),
-    #           labels=labels,
-    #           show=True)
+    # data = plotting(model_states, 15, 23)
+    # plt.plot(time, data)
+    # plt.show()
+    plot_stats(t=time,
+              states=np.array(model_states).transpose(),
+              labels=labels,
+              show=True)
 
