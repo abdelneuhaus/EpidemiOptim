@@ -357,12 +357,6 @@ class HeffernanOdeModel(BaseModel):
         else:
             return np.atleast_2d(z[1:])
 
-def plotting(model, grp, cpt):
-    otp = []
-    for i in range(len(model)):
-        otp.append(model[i][grp][cpt])
-    return otp
-
 
 if __name__ == '__main__':
     # Get model
@@ -379,9 +373,6 @@ if __name__ == '__main__':
     time = np.arange(simulation_horizon)
     labels = model.internal_states_labels
 
-    # data = plotting(model_states, 15, 23)
-    # plt.plot(time, data)
-    # plt.show()
     plot_stats(t=time,
               states=np.array(model_states).transpose(),
               labels=labels,
