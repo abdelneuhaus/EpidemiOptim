@@ -676,7 +676,8 @@ def calculate_A_and_c(step, k, contact_modifiers, perturbation_matrices, transit
         wf = perturbation_matrices[10]
     elif (phase[step][2] == 3):
         wf = perturbation_matrices[11]
-
+    #print("step", step, phase[step])
+    #print(wf)
     USc = transition_matrices[0] + np.multiply(np.matrix(wf), transition_matrices[1]) + np.multiply(np.matrix(of), transition_matrices[2]) + np.multiply(np.matrix(sf), transition_matrices[3])
     B = USc.sum(axis=0)
     _con = np.multiply(USc, k)
@@ -705,11 +706,11 @@ def vaccination_active(path):
     return [x for y in _vaccineFull for x in y]
 
 
-def k_value(t, path=get_repo_path() + '/data/jane_model_data/ScenarioPlanFranceOne.xlsx'):
+def k_value(t, path=get_repo_path() + '/data/jane_model_data/kval.txt'):
     """
     Compare the current timestep t to a list of int and return the appropriate kval
     """
-    k = get_kvalue(path)
+    k = get_text_file_data(path)
     kval = [x for y in k for x in y]
     time = [0, 71, 73, 76, 153, 173, 185, 201, 239, 244, 290, 295, 303, 305, 349, 353, 369, 370, 377, 381, 384, 391, 398, 402, 
                      404, 405, 409, 412, 418, 419, 425, 426, 431, 433, 440, 447, 454, 459, 461, 465, 468, 472 , 475, 481, 482, 488, 
@@ -721,7 +722,7 @@ def k_value(t, path=get_repo_path() + '/data/jane_model_data/ScenarioPlanFranceO
             return kval[i]
 
 
-def nu_value(t, path=get_repo_path() + '/data/jane_model_data/ScenarioPlanFranceOne.xlsx'):
+def nu_value(t, path=get_repo_path() + '/data/jane_model_data/ScenarioPlanFranceOne1.xlsx'):
     vocInfect = 0.5
     time = [0, 71, 73, 76, 153, 173, 185, 201, 239, 244, 290, 295, 303, 305, 349, 353, 369, 370, 377, 381, 384, 391, 398, 402, 
                      404, 405, 409, 412, 418, 419, 425, 426, 431, 433, 440, 447, 454, 459, 461, 465, 468, 472 , 475, 481, 482, 488, 

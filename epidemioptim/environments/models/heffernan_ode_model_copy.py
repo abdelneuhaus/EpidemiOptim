@@ -8,7 +8,7 @@ from epidemioptim.environments.models.base_model import BaseModel
 from epidemioptim.utils import *
 
 
-PATH_TO_DATA = get_repo_path() + '/data/jane_model_data/ScenarioPlanFranceOne.xlsx'
+PATH_TO_DATA = get_repo_path() + '/data/jane_model_data/ScenarioPlanFranceOne1.xlsx'
 PATH_TO_HOME_MATRIX = get_repo_path() + '/data/jane_model_data/contactHome.txt'
 PATH_TO_SCHOOL_MATRIX = get_repo_path() + '/data/jane_model_data/contactSchool.txt'
 PATH_TO_WORK_MATRIX = get_repo_path() + '/data/jane_model_data/contactWork.txt'
@@ -95,7 +95,6 @@ def vaccination_model(y: tuple,
 
     # Susceptible compartments
     dS1dt = - sum(p1)*alpha[0]*A[0]*S1*infect + omega[1]*S2 - sigma*rho*S1 + omega[1]*V11
-    print(dS1dt)
     dS2dt = - sum(p2)*alpha[1]*A[1]*S2*infect + omega[2]*S3 - omega[1]*S2 - sigma*rho*S2 + gamma[1]*I2 + omega[2]*V21
     dS3dt = - (p3[1]+p3[2])*alpha[2]*A[2]*S3*infect + omega[3]*S4 - omega[2]*S3 - sigma*rho*S3 + gamma[2]*I3 + omega[3]*(V31+V41+V12+V22+V32+V42)
     dS4dt = - omega[3]*S4 - sigma*rho*S4 + gamma[3]*I4
@@ -116,7 +115,6 @@ def vaccination_model(y: tuple,
     dE42dt = kappa[1]*E41 - kappa[2]*E42
     dE43dt = kappa[2]*E42 - kappa[3]*E43 
 
-
     # Vaccinated compartments
     dV11dt = sigma*rho*S1 - sigma*rho*V11 - sum(p2)*epsilon*alpha[1]*A[1]*V11*infect - omega[1]*V11
     dV21dt = sigma*rho*S2 - sigma*rho*V21 - (p3[1]+p3[2])*epsilon*alpha[2]*A[2]*V21*infect - omega[2]*V21
@@ -128,7 +126,6 @@ def vaccination_model(y: tuple,
     dV32dt = sigma*rho*V31 - omega[3]*V32
     dV42dt = sigma*rho*V41 - omega[3]*V42
 
-              
     # Infected compartments
     dI2dt = kappa[3]*E23 - delta[1]*I2 - gamma[1]*I2
     dI3dt = kappa[3]*E33 - delta[2]*I3 - gamma[2]*I3
@@ -349,7 +346,10 @@ class HeffernanOdeModel(BaseModel):
         self.current_internal_params['A'], self.current_internal_params['c'] = np.array(A_c[0]).T, A_c[1]
         if(self.t == self.step_list[self.step]):
             self.k = k_value(self.t)
-            self.step += 1    
+            self.step += 1
+            if (self.t <= 70):
+                self.step = 0
+        print("t",self.t, "k", self.k, "step", self.step) 
         # Use the odeint library to run the ODE model
         z = odeintw(self.internal_model, current_state, np.linspace(0, 1, 2), args=(self._get_model_params()))
         self._set_current_state(current_state=z[-1].copy())  # save new current state
@@ -362,13 +362,34 @@ class HeffernanOdeModel(BaseModel):
             return np.atleast_2d(z[1:])
 
 
+def plot_preds(t, states, labels, show=False):
+    plt.plot(t, states[0], color='r', label='0-4') # r - red colour
+    plt.plot(t, states[1], color='g', label='5-9') # g - green colour
+    plt.plot(t, states[2], color='b', label='10-14') # g - green colour
+    plt.plot(t, states[3], color='c', label='15-19') # g - green colour
+    plt.plot(t, states[4], color='m', label='20-24') # g - green colour
+    plt.plot(t, states[5], color='y', label='25-29') # g - green colour
+    plt.plot(t, states[6], color='k', label='30-34') # g - green colour
+    plt.plot(t, states[7], color='grey', label='35-39') # g - green colour
+    plt.plot(t, states[8], color='plum', label='40-44') # g - green colour
+    plt.plot(t, states[9], color='chocolate', label='45-49') # g - green colour
+    plt.plot(t, states[10], color='darkgreen', label='50-54') # g - green colour
+    plt.plot(t, states[11], color='mediumaquamarine', label='55-59') # g - green colour
+    plt.plot(t, states[12], color='lightgreen', label='60-64') # g - green colour
+    plt.plot(t, states[13], color='peru', label='65-69') # g - green colour
+    plt.plot(t, states[14], color='salmon', label='74-74') # g - green colour
+    plt.plot(t, states[15], color='deepskyblue', label='75+') # g - green colour
+    plt.legend()
+    plt.show()
+
+
 
 if __name__ == '__main__':
     # Get model
     model = HeffernanOdeModel(age_group='0-4', stochastic=False)
 
     # Run simulation
-    simulation_horizon = 1
+    simulation_horizon = 365
     model_states = []
     for i in range(simulation_horizon):
         model_state = model.run_n_steps()
@@ -378,7 +399,7 @@ if __name__ == '__main__':
     time = np.arange(simulation_horizon)
     labels = ['0-4', '5-9', '10-14', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44', '45-49', '50-54', '55-59', '60-64', '65-69',  '70-74', '75+']
 
-    # plot_stats(t=time,
+    # plot_preds(t=time,
     #           states=np.array(model_states).transpose()[23],
     #           labels=labels,
     #           show=True)
