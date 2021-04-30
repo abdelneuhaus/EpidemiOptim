@@ -3,7 +3,7 @@ import os
 import random
 import json
 
-from math import modf
+import math
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -576,12 +576,19 @@ def create_list(value, sublist_nb, sublist_size):
         tmp = []
     return out
 
+def truncate(f, n):
+    """
+    f: int or float, number to truncate
+    n: number of decimal to keep
+    """
+    return math.floor(f * 10 ** n) / 10 ** n
 
 def get_perturbations_matrices(path):
     pertubations_matrices = pd.read_excel(path, sheet_name='Perturbation Matricies')
     sf1 = pertubations_matrices.iloc[2:18,1:17].values.tolist()
     sf2 = pertubations_matrices.iloc[21:37,1:17].values.tolist()
     sf3 = pertubations_matrices.iloc[40:56,1:17].values.tolist()
+    sf3 = [[truncate(float(x), 4) for x in lst] for lst in sf3]
     sf4 = pertubations_matrices.iloc[59:75,1:17].values.tolist()
     sf5 = pertubations_matrices.iloc[78:94,1:17].values.tolist()
     sf6 = pertubations_matrices.iloc[97:113,1:17].values.tolist()
@@ -614,16 +621,17 @@ def get_kvalue(path):
 
 def get_transition_matrices(group_population, H, S, W, O):
     pop_size = [group_population[x] for x in group_population.keys()]
-    population = np.matrix(duplicate_data(pop_size, 16))
-    H1 = np.multiply(np.matrix(H).T,population)
-    S1 = np.multiply(np.matrix(S).T,population)
-    W1 = np.multiply(np.matrix(W).T,population)
-    O1 = np.multiply(np.matrix(O).T,population)
+    population = np.array(duplicate_data(pop_size, 16))
 
-    Hmat1 = np.multiply(np.matrix(H1), np.matrix(H1).T)
-    Smat1 = np.multiply(np.matrix(S1), np.matrix(S1).T)
-    Wmat1 = np.multiply(np.matrix(W1), np.matrix(W1).T)
-    Omat1 = np.multiply(np.matrix(O1), np.matrix(O1).T)
+    H1 = np.multiply(np.array(H).T,population)
+    S1 = np.multiply(np.array(S).T,population)
+    W1 = np.multiply(np.array(W).T,population)
+    O1 = np.multiply(np.array(O).T,population)
+
+    Hmat1 = np.multiply(np.array(H1), np.array(H1).T)
+    Smat1 = np.multiply(np.array(S1), np.array(S1).T)
+    Wmat1 = np.multiply(np.array(W1), np.array(W1).T)
+    Omat1 = np.multiply(np.array(O1), np.array(O1).T)
 
     Hmat = np.divide(np.sqrt(Hmat1), population)
     Smat = np.divide(np.sqrt(Smat1), population)
@@ -649,7 +657,7 @@ def calculate_A_and_c(step, k, contact_modifiers, perturbation_matrices, transit
     sf = create_list(1, N, N)
     wf = create_list(1, N, N)
     of = create_list(1, N, N)
-    phase = contact_modifiers[0]
+    phase = contact_modifiers[3]
     if (phase[step][0] == 1):
         sf = perturbation_matrices[0]
     elif (phase[step][0] == 2):
@@ -676,8 +684,7 @@ def calculate_A_and_c(step, k, contact_modifiers, perturbation_matrices, transit
         wf = perturbation_matrices[10]
     elif (phase[step][2] == 3):
         wf = perturbation_matrices[11]
-    #print("step", step, phase[step])
-    #print(wf)
+
     USc = transition_matrices[0] + np.multiply(np.matrix(wf), transition_matrices[1]) + np.multiply(np.matrix(of), transition_matrices[2]) + np.multiply(np.matrix(sf), transition_matrices[3])
     B = USc.sum(axis=0)
     _con = np.multiply(USc, k)
@@ -716,9 +723,9 @@ def k_value(t, path=get_repo_path() + '/data/jane_model_data/kval.txt'):
                      404, 405, 409, 412, 418, 419, 425, 426, 431, 433, 440, 447, 454, 459, 461, 465, 468, 472 , 475, 481, 482, 488, 
                      489, 494, 496, 497, 501, 503, 510, 517, 524, 531, 552, 592, 609, 731]
     for i in range(0, len(time)):
-        if int(t) == time[i]:
+        if t == time[i]:
             return kval[i]
-        elif int(t) > time[i] and int(t) < time[i+1]:
+        elif t > time[i] and t < time[i+1]:
             return kval[i]
 
 

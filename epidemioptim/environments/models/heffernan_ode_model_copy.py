@@ -1,7 +1,4 @@
 import numpy as np
-from numpy.core.fromnumeric import cumsum
-from numpy.lib.shape_base import dsplit
-from scipy.integrate import odeint
 from odeintw import odeintw
 
 from epidemioptim.environments.models.base_model import BaseModel
@@ -27,6 +24,7 @@ def vaccination_model(y: tuple,
                       epsilon: float,
                       gamma: tuple,
                       kappa: tuple, 
+                      nu: float,
                       omega: tuple,
                       p1: tuple, 
                       p2: tuple, 
@@ -89,7 +87,7 @@ def vaccination_model(y: tuple,
 
     # Infect calculation
     T = S1 + S2 + S3 + S4 + E21 + E22 + E23 + E31 + E32 + E33 + E41 + E42 + E43 + V11 + V21 + V31 + V41 + V12 + V22 + V32 + V42 + I2 + I3 + I4
-    Xm = sum(np.multiply(beta, np.array((I2,I3,I4)).T).T)
+    Xm = sum(np.multiply((beta+beta*nu), np.array((I2,I3,I4)).T).T)
     Ym = np.divide(Xm, T)
     infect = np.matmul(np.array(c).T, Ym.T)
 
@@ -174,7 +172,7 @@ class HeffernanOdeModel(BaseModel):
         self.define_params_and_initial_state_distributions()
 
         # Sample initial conditions and initial model parameters
-        internal_params_labels = ['A', 'alpha', 'beta', 'c', 'delta', 'epsilon', 'gamma', 'kappa', 'omega', 'p1', 'p2', 'p3', 'rho', 'sigma']
+        internal_params_labels = ['A', 'alpha', 'beta', 'c', 'delta', 'epsilon', 'gamma', 'kappa', 'nu', 'omega', 'p1', 'p2', 'p3', 'rho', 'sigma']
 
         # Define ODE model
         self.internal_model = vaccination_model
@@ -199,6 +197,7 @@ class HeffernanOdeModel(BaseModel):
                                                          epsilon=0.5,
                                                          gamma=np.array(duplicate_data([0, 0.2, 0.1, 1/15], 16)).T,
                                                          kappa=np.array(duplicate_data([0, 1/1.5, 1/1.5, 1/1.5], 16)).T,
+                                                         nu=None,
                                                          omega=np.array(duplicate_data([0, 1/365, 1/365, 1/365], 16)).T,
                                                          p1=np.array(self.p1).T,
                                                          p2=np.array(self.p2).T,
@@ -342,14 +341,13 @@ class HeffernanOdeModel(BaseModel):
         """
         if current_state is None:
             current_state = np.array(self._get_current_state())
-        A_c = calculate_A_and_c(self.step, self.k, self.contact_modifiers, self.perturbations_matrices, self.transition_matrices)
+        A_c = calculate_A_and_c(self.step-1, self.k, self.contact_modifiers, self.perturbations_matrices, self.transition_matrices)
         self.current_internal_params['A'], self.current_internal_params['c'] = np.array(A_c[0]).T, A_c[1]
+        self.current_internal_params['nu'] = nu_value(self.t)
         if(self.t == self.step_list[self.step]):
             self.k = k_value(self.t)
             self.step += 1
-            if (self.t <= 70):
-                self.step = 0
-        print("t",self.t, "k", self.k, "step", self.step) 
+        #print("t",self.t, "k", self.k) 
         # Use the odeint library to run the ODE model
         z = odeintw(self.internal_model, current_state, np.linspace(0, 1, 2), args=(self._get_model_params()))
         self._set_current_state(current_state=z[-1].copy())  # save new current state
@@ -363,22 +361,22 @@ class HeffernanOdeModel(BaseModel):
 
 
 def plot_preds(t, states, labels, show=False):
-    plt.plot(t, states[0], color='r', label='0-4') # r - red colour
-    plt.plot(t, states[1], color='g', label='5-9') # g - green colour
-    plt.plot(t, states[2], color='b', label='10-14') # g - green colour
-    plt.plot(t, states[3], color='c', label='15-19') # g - green colour
-    plt.plot(t, states[4], color='m', label='20-24') # g - green colour
-    plt.plot(t, states[5], color='y', label='25-29') # g - green colour
-    plt.plot(t, states[6], color='k', label='30-34') # g - green colour
-    plt.plot(t, states[7], color='grey', label='35-39') # g - green colour
-    plt.plot(t, states[8], color='plum', label='40-44') # g - green colour
-    plt.plot(t, states[9], color='chocolate', label='45-49') # g - green colour
-    plt.plot(t, states[10], color='darkgreen', label='50-54') # g - green colour
-    plt.plot(t, states[11], color='mediumaquamarine', label='55-59') # g - green colour
-    plt.plot(t, states[12], color='lightgreen', label='60-64') # g - green colour
-    plt.plot(t, states[13], color='peru', label='65-69') # g - green colour
-    plt.plot(t, states[14], color='salmon', label='74-74') # g - green colour
-    plt.plot(t, states[15], color='deepskyblue', label='75+') # g - green colour
+    plt.plot(t, states[0], color='b', label='0-4')
+    plt.plot(t, states[1], color='r', label='5-9')
+    plt.plot(t, states[2], color='lime', label='10-14')
+    plt.plot(t, states[3], color='fuchsia', label='15-19')
+    plt.plot(t, states[4], color='gold', label='20-24')
+    plt.plot(t, states[5], color='dodgerblue', label='25-29')
+    plt.plot(t, states[6], color='forestgreen', label='30-34')
+    plt.plot(t, states[7], color='peru', label='35-39')
+    plt.plot(t, states[8], color='indigo', label='40-44')
+    plt.plot(t, states[9], color='cyan', label='45-49')
+    plt.plot(t, states[10], color='teal', label='50-54')
+    plt.plot(t, states[11], color='plum', label='55-59')
+    plt.plot(t, states[12], color='palegreen', label='60-64')
+    plt.plot(t, states[13], color='mediumorchid', label='65-69')
+    plt.plot(t, states[14], color='orangered', label='74-74')
+    plt.plot(t, states[15], color='olive', label='75+')
     plt.legend()
     plt.show()
 
@@ -389,7 +387,7 @@ if __name__ == '__main__':
     model = HeffernanOdeModel(age_group='0-4', stochastic=False)
 
     # Run simulation
-    simulation_horizon = 365
+    simulation_horizon = 730
     model_states = []
     for i in range(simulation_horizon):
         model_state = model.run_n_steps()
@@ -399,8 +397,8 @@ if __name__ == '__main__':
     time = np.arange(simulation_horizon)
     labels = ['0-4', '5-9', '10-14', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44', '45-49', '50-54', '55-59', '60-64', '65-69',  '70-74', '75+']
 
-    # plot_preds(t=time,
-    #           states=np.array(model_states).transpose()[23],
-    #           labels=labels,
-    #           show=True)
+    plot_preds(t=time,
+              states=np.array(model_states).transpose()[23],
+              labels=labels,
+              show=True)
 
