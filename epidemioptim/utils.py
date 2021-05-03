@@ -729,7 +729,7 @@ def k_value(t, path=get_repo_path() + '/data/jane_model_data/kval.txt'):
             return kval[i]
 
 
-def nu_value(t, path=get_repo_path() + '/data/jane_model_data/ScenarioPlanFranceOne1.xlsx'):
+def nu_value(t, path=get_repo_path() + '/data/jane_model_data/ScenarioPlanFranceOne.xlsx'):
     vocInfect = 0.5
     time = [0, 71, 73, 76, 153, 173, 185, 201, 239, 244, 290, 295, 303, 305, 349, 353, 369, 370, 377, 381, 384, 391, 398, 402, 
                      404, 405, 409, 412, 418, 419, 425, 426, 431, 433, 440, 447, 454, 459, 461, 465, 468, 472 , 475, 481, 482, 488, 
