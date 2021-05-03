@@ -89,7 +89,8 @@ def vaccination_model(y: tuple,
     T = S1 + S2 + S3 + S4 + E21 + E22 + E23 + E31 + E32 + E33 + E41 + E42 + E43 + V11 + V21 + V31 + V41 + V12 + V22 + V32 + V42 + I2 + I3 + I4
     Xm = sum(np.multiply((beta+beta*nu), np.array((I2,I3,I4)).T).T)
     Ym = np.divide(Xm, T)
-    infect = np.matmul(np.array(c).T, Ym.T)
+    infect = np.dot(np.array(c).T, Ym)
+    #print(infect)
 
     # Susceptible compartments
     dS1dt = - sum(p1)*alpha[0]*A[0]*S1*infect + omega[1]*S2 - sigma*rho*S1 + omega[1]*V11
@@ -155,7 +156,7 @@ class HeffernanOdeModel(BaseModel):
         self._pop_size = pd.read_excel(PATH_TO_DATA, sheet_name='population', skiprows=3, usecols=(2,2))
         self.pop_size = dict(zip(self._age_groups, (self._pop_size['Unnamed: 2'])))
         self.transition_matrices = get_transition_matrices(self.pop_size, self.home, self.school, self.work, self.other)
-        self.step_list = [0, 71, 73, 76, 153, 173, 185, 201, 239, 244, 290, 295, 303, 305, 349, 353, 369, 370, 377, 381, 384, 391, 398, 402, 
+        self.step_list = [0, 71, 73, 76, 153, 173, 185, 201, 239, 244, 290, 295, 303, 305, 349, 353, 368, 369, 370, 377, 381, 384, 391, 398, 402, 
                      404, 405, 409, 412, 418, 419, 425, 426, 431, 433, 440, 447, 454, 459, 461, 465, 468, 472 , 475, 481, 482, 488, 
                      489, 494, 496, 497, 501, 503, 510, 517, 524, 531, 552, 592, 609, 731]
         self.step = 0
@@ -202,7 +203,7 @@ class HeffernanOdeModel(BaseModel):
                                                          p1=np.array(self.p1).T,
                                                          p2=np.array(self.p2).T,
                                                          p3=np.array(self.p3).T,
-                                                         rho=0.8944,
+                                                         rho=0,
                                                          sigma=0#sigma_calculation(0, self.active_vaccination, self.vaccination_coverage)
                                                          )
 
@@ -341,13 +342,15 @@ class HeffernanOdeModel(BaseModel):
         """
         if current_state is None:
             current_state = np.array(self._get_current_state())
-        A_c = calculate_A_and_c(self.step-1, self.k, self.contact_modifiers, self.perturbations_matrices, self.transition_matrices)
-        self.current_internal_params['A'], self.current_internal_params['c'] = np.array(A_c[0]).T, A_c[1]
-        self.current_internal_params['nu'] = nu_value(self.t)
         if(self.t == self.step_list[self.step]):
             self.k = k_value(self.t)
             self.step += 1
-        #print("t",self.t, "k", self.k) 
+        #print(self.step-1)
+            #print("t",self.t, "k", self.k) 
+        A_c = calculate_A_and_c(self.step-1, self.k, self.contact_modifiers, self.perturbations_matrices, self.transition_matrices)
+        self.current_internal_params['A'], self.current_internal_params['c'] = np.array(A_c[0]), A_c[1]
+        self.current_internal_params['nu'] = nu_value(self.t)
+        
         # Use the odeint library to run the ODE model
         z = odeintw(self.internal_model, current_state, np.linspace(0, 1, 2), args=(self._get_model_params()))
         self._set_current_state(current_state=z[-1].copy())  # save new current state
@@ -360,7 +363,7 @@ class HeffernanOdeModel(BaseModel):
             return np.atleast_2d(z[1:])
 
 
-def plot_preds(t, states, labels, show=False):
+def plot_preds(t, states):
     plt.plot(t, states[0], color='b', label='0-4')
     plt.plot(t, states[1], color='r', label='5-9')
     plt.plot(t, states[2], color='lime', label='10-14')
@@ -387,7 +390,7 @@ if __name__ == '__main__':
     model = HeffernanOdeModel(age_group='0-4', stochastic=False)
 
     # Run simulation
-    simulation_horizon = 730
+    simulation_horizon = 700
     model_states = []
     for i in range(simulation_horizon):
         model_state = model.run_n_steps()
@@ -396,9 +399,6 @@ if __name__ == '__main__':
     # Plot
     time = np.arange(simulation_horizon)
     labels = ['0-4', '5-9', '10-14', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44', '45-49', '50-54', '55-59', '60-64', '65-69',  '70-74', '75+']
-
     plot_preds(t=time,
-              states=np.array(model_states).transpose()[23],
-              labels=labels,
-              show=True)
+              states=np.array(model_states).transpose()[23])
 

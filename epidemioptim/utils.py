@@ -599,7 +599,7 @@ def get_perturbations_matrices(path):
     wf2 = pertubations_matrices.iloc[21:37,37:53].values.tolist()
     wf3 = pertubations_matrices.iloc[40:56, 37:53].values.tolist()
     
-    return [sf1, sf2, sf3, sf4, sf5, sf6, of1, of2, of3, wf1, wf2, wf3]
+    return [sf1, sf2, sf3, sf4, sf5, sf6, wf1, wf2, wf3, of1, of2, of3]
 
 
 def get_contact_modifiers(path):
@@ -611,12 +611,6 @@ def get_contact_modifiers(path):
     E5 = modifier.iloc[2:63,18:21].values.tolist()
     Ebase = modifier.iloc[2:63,22:25].values.tolist()
     return [E1, E2, E3, E4, E5, Ebase]
-
-
-def get_kvalue(path):
-    kval = pd.read_excel(path, sheet_name='kvalFull')     # Need to pip install openpyxl
-    return kval.iloc[0:59,1:4].values.tolist()
-
 
 
 def get_transition_matrices(group_population, H, S, W, O):
@@ -657,7 +651,9 @@ def calculate_A_and_c(step, k, contact_modifiers, perturbation_matrices, transit
     sf = create_list(1, N, N)
     wf = create_list(1, N, N)
     of = create_list(1, N, N)
-    phase = contact_modifiers[3]
+    phase = contact_modifiers[5]
+    if step == -1:
+        step = 0
     if (phase[step][0] == 1):
         sf = perturbation_matrices[0]
     elif (phase[step][0] == 2):
@@ -672,27 +668,26 @@ def calculate_A_and_c(step, k, contact_modifiers, perturbation_matrices, transit
         sf = perturbation_matrices[5]
 
     if (phase[step][1] == 1):
-        of = perturbation_matrices[6]
+        wf = perturbation_matrices[6]
     elif (phase[step][1] == 2):
-        of = perturbation_matrices[7]
+        wf = perturbation_matrices[7]
     elif (phase[step][1] == 3):
-        of = perturbation_matrices[8]
+        wf = perturbation_matrices[8]
 
     if (phase[step][2] == 1):
-        wf = perturbation_matrices[9]
+        of = perturbation_matrices[9]
     elif (phase[step][2] == 2):
-        wf = perturbation_matrices[10]
+        of = perturbation_matrices[10]
     elif (phase[step][2] == 3):
-        wf = perturbation_matrices[11]
+        of = perturbation_matrices[11]
 
-    USc = transition_matrices[0] + np.multiply(np.matrix(wf), transition_matrices[1]) + np.multiply(np.matrix(of), transition_matrices[2]) + np.multiply(np.matrix(sf), transition_matrices[3])
+    USc = np.array(transition_matrices[0]) + np.multiply(np.array(wf), transition_matrices[1]) + np.multiply(np.array(of), transition_matrices[2]) + np.multiply(np.array(sf), transition_matrices[3])
     B = USc.sum(axis=0)
     _con = np.multiply(USc, k)
     _A = _con.sum(axis=0)
     _c = np.divide(_con, np.tile(_A, (16,1)))
     _A = np.tile(_A, (4,1))
-    A, c = _A.T.tolist(), _c.tolist()
-    #print(c)
+    A, c = _A.tolist(), _c.tolist()
     return [A, c]
 
 
@@ -719,7 +714,7 @@ def k_value(t, path=get_repo_path() + '/data/jane_model_data/kval.txt'):
     """
     k = get_text_file_data(path)
     kval = [x for y in k for x in y]
-    time = [0, 71, 73, 76, 153, 173, 185, 201, 239, 244, 290, 295, 303, 305, 349, 353, 369, 370, 377, 381, 384, 391, 398, 402, 
+    time = [0, 71, 73, 76, 153, 173, 185, 201, 239, 244, 290, 295, 303, 305, 349, 353, 368, 369, 370, 377, 381, 384, 391, 398, 402, 
                      404, 405, 409, 412, 418, 419, 425, 426, 431, 433, 440, 447, 454, 459, 461, 465, 468, 472 , 475, 481, 482, 488, 
                      489, 494, 496, 497, 501, 503, 510, 517, 524, 531, 552, 592, 609, 731]
     for i in range(0, len(time)):
@@ -731,7 +726,7 @@ def k_value(t, path=get_repo_path() + '/data/jane_model_data/kval.txt'):
 
 def nu_value(t, path=get_repo_path() + '/data/jane_model_data/ScenarioPlanFranceOne.xlsx'):
     vocInfect = 0.5
-    time = [0, 71, 73, 76, 153, 173, 185, 201, 239, 244, 290, 295, 303, 305, 349, 353, 369, 370, 377, 381, 384, 391, 398, 402, 
+    time = [0, 71, 73, 76, 153, 173, 185, 201, 239, 244, 290, 295, 303, 305, 349, 353, 368, 369, 370, 377, 381, 384, 391, 398, 402, 
                      404, 405, 409, 412, 418, 419, 425, 426, 431, 433, 440, 447, 454, 459, 461, 465, 468, 472 , 475, 481, 482, 488, 
                      489, 494, 496, 497, 501, 503, 510, 517, 524, 531, 552, 592, 609, 731]
     _vocpercent = pd.read_excel(path, sheet_name='VOC France', skiprows=0, usecols=(3,3)).values.tolist()
