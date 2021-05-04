@@ -631,7 +631,6 @@ def get_transition_matrices(group_population, H, S, W, O):
     Smat = np.divide(np.sqrt(Smat1), population)
     Wmat = np.divide(np.sqrt(Wmat1), population)
     Omat = np.divide(np.sqrt(Omat1), population)
-    #print(Hmat)
 
     return [Hmat, Wmat, Omat, Smat]
 
@@ -653,7 +652,6 @@ def calculate_A_and_c(step, k, contact_modifiers, perturbation_matrices, transit
     wf = create_list(1, N, N)
     of = create_list(1, N, N)
     phase = contact_modifiers[5]
-    #print("k",k,"step",step,"phase",phase[step])
     if (phase[step][0] == 1):
         sf = perturbation_matrices[0]
     elif (phase[step][0] == 2):
@@ -680,7 +678,7 @@ def calculate_A_and_c(step, k, contact_modifiers, perturbation_matrices, transit
         of = perturbation_matrices[10]
     elif (phase[step][2] == 3):
         of = perturbation_matrices[11]
-    #print(wf)
+
     USc = np.array(transition_matrices[0]) + np.multiply(np.array(wf), np.array(transition_matrices[1])) + np.multiply(np.array(of), np.array(transition_matrices[2])) + np.multiply(np.array(sf), np.array(transition_matrices[3]))
     B = USc.sum(axis=0)
     _con = np.dot(USc, k)
