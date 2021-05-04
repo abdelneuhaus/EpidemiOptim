@@ -345,8 +345,6 @@ class HeffernanOdeModel(BaseModel):
         if(self.t == self.step_list[self.step]):
             self.k = k_value(self.t)
             self.step += 1
-        #print(self.step-1)
-            #print("t",self.t, "k", self.k) 
         A_c = calculate_A_and_c(self.step-1, self.k, self.contact_modifiers, self.perturbations_matrices, self.transition_matrices)
         self.current_internal_params['A'], self.current_internal_params['c'] = np.array(A_c[0]), A_c[1]
         self.current_internal_params['nu'] = nu_value(self.t)
@@ -390,7 +388,7 @@ if __name__ == '__main__':
     model = HeffernanOdeModel(age_group='0-4', stochastic=False)
 
     # Run simulation
-    simulation_horizon = 700
+    simulation_horizon = 730
     model_states = []
     for i in range(simulation_horizon):
         model_state = model.run_n_steps()
