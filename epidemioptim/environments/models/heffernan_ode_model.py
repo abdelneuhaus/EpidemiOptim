@@ -350,7 +350,7 @@ class HeffernanOdeModel(BaseModel):
         self.current_internal_params['nu'] = nu_value(self.t)
         
         # Use the odeint library to run the ODE model
-        z = odeintw(self.internal_model, current_state, np.linspace(0, 1, 2), args=(self._get_model_params()))
+        z = odeintw(self.internal_model, current_state, np.linspace(0, n, n + 1), args=(self._get_model_params()))
         self._set_current_state(current_state=z[-1].copy())  # save new current state
         self.t += 1
         self.current_state = self.convert_states(self.current_state)

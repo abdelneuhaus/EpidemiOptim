@@ -749,6 +749,6 @@ def get_target_population(t, age_group, path = get_repo_path() + '/data/jane_mod
 
 
 def get_MATLAB_res(path = get_repo_path() + '/data/jane_model_data/ScenarioPlanFranceOne.xlsx'):
-    _data = pd.read_excel(path, sheet_name='I4 365', skiprows=None, usecols=(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16)).values.tolist()
+    _data = pd.read_excel(path, sheet_name='I4 sim', skiprows=None, usecols=(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16)).values.tolist()
     return np.array(_data).transpose()
 
