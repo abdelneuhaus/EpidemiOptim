@@ -665,14 +665,15 @@ def calculate_A_and_c(step, k, contact_modifiers, perturbation_matrices, transit
     elif (phase[step][0] == 6):
         sf = perturbation_matrices[5]
 
+    # error here
     if (phase[step][1] == 1):
         wf = perturbation_matrices[6]
-    elif (phase[step][2] == 2):
+    elif (phase[step][1] == 2):
         wf = perturbation_matrices[7]
-    elif (phase[step][2] == 3):
+    elif (phase[step][1] == 3):
         wf = perturbation_matrices[8]
 
-    if (phase[step][1] == 1):
+    if (phase[step][2] == 1):
         of = perturbation_matrices[9]
     elif (phase[step][2] == 2):
         of = perturbation_matrices[10]
@@ -697,7 +698,7 @@ def sigma_calculation(step, boolVaccination, coverage):
 
 
 def get_coverage(path):
-    _coverage = pd.read_excel(path, sheet_name='coverage', skiprows=0, usecols=(1,1)).values.tolist()
+    _coverage = pd.read_excel(path, sheet_name='coverage', skiprows=0, usecols=(1,1)).fillna(0).values.tolist()
     return [x for y in _coverage for x in y]
 
 
@@ -728,10 +729,26 @@ def nu_value(t, path=get_repo_path() + '/data/jane_model_data/ScenarioPlanFrance
                      404, 405, 409, 412, 418, 419, 425, 426, 431, 433, 440, 447, 454, 459, 461, 465, 468, 472 , 475, 481, 482, 488, 
                      489, 494, 496, 497, 501, 503, 510, 517, 524, 531, 552, 592, 609, 731]
     _vocpercent = pd.read_excel(path, sheet_name='VOC France', skiprows=0, usecols=(3,3)).values.tolist()
-    vocpercent = [ x for y in _vocpercent for x in y if str(x) != 'nan']
+    vocpercent = [x for y in _vocpercent for x in y if str(x) != 'nan']
     for i in range(0, len(time)):
         if int(t) == time[i]:
             return vocInfect*vocpercent[i]/100
         elif int(t) > time[i] and int(t) < time[i+1]:
             return vocInfect*vocpercent[i]/100
+
+
+def get_target_population(t, age_group, path = get_repo_path() + '/data/jane_model_data/ScenarioPlanFranceOne.xlsx'):
+    _data = pd.read_excel(path, sheet_name='targetPopulation', skiprows=0, usecols=(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16)).fillna(0).values.tolist()
+    val = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
+    for i in range(len(val)):
+        for j in range(0,len(_data)):
+            for x in range(0,len(_data[j])):
+                if _data[j][x] == val[i]:
+                    _data[j][x] = age_group[i]
+    return np.array(_data)
+
+
+def get_MATLAB_res(path = get_repo_path() + '/data/jane_model_data/ScenarioPlanFranceOne.xlsx'):
+    _data = pd.read_excel(path, sheet_name='I4 365', skiprows=None, usecols=(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16)).values.tolist()
+    return np.array(_data).transpose()
 

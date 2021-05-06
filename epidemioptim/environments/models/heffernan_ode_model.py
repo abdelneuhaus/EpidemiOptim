@@ -360,7 +360,7 @@ class HeffernanOdeModel(BaseModel):
         else:
             return np.atleast_2d(z[1:])
 
-
+# put into utils
 def plot_preds(t, states):
     plt.plot(t, states[0], color='b', label='0-4')
     plt.plot(t, states[1], color='r', label='5-9')
@@ -381,6 +381,17 @@ def plot_preds(t, states):
     plt.legend()
     plt.show()
 
+# put into utils or delete
+def plot_comparison(t, states):
+    n_plots = len(states)
+    x = int(np.sqrt(n_plots))
+    y = int(n_plots / x - 1e-4) + 1
+    fig, axs = plt.subplots(x, y, figsize=(12, 7))
+    axs = axs.ravel()
+    for i in range(n_plots):
+        axs[i].plot(t[i], states[i], linewidth=5)
+    plt.show()
+    return axs, fig
 
 
 if __name__ == '__main__':
@@ -388,7 +399,7 @@ if __name__ == '__main__':
     model = HeffernanOdeModel(age_group='0-4', stochastic=False)
 
     # Run simulation
-    simulation_horizon = 730
+    simulation_horizon = 365
     model_states = []
     for i in range(simulation_horizon):
         model_state = model.run_n_steps()
@@ -398,5 +409,6 @@ if __name__ == '__main__':
     time = np.arange(simulation_horizon)
     labels = ['0-4', '5-9', '10-14', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44', '45-49', '50-54', '55-59', '60-64', '65-69',  '70-74', '75+']
     plot_preds(t=time,
-              states=np.array(model_states).transpose()[23])
+               states=np.array(model_states).transpose()[23])
+    #plot_comparison(get_MATLAB_res(), np.array(model_states).transpose()[23])
 
