@@ -43,7 +43,7 @@ class EpidemicVaccination(BaseEnv):
 
         # Initialize states
         self.state_labels = self.model.internal_states_labels + ['previous_lockdown_state', 'current_lockdown_state'] + \
-            ['cumulative_cost_{}'.format(id_cost) for id_cost in range(self.cost_function.nb_costs)] + ['level_b']
+            ['cumulative_cost_{}'.format(id_cost) for id_cost in range(self.cost_function.nb_costs)]
         self.label_to_id = dict(zip(self.state_labels, np.arange(len(self.state_labels))))
         self.normalization_factors = [self.model.current_internal_params['N_av']] * len(self.model.internal_states_labels) + \
                                      [1, 1, self.model.current_internal_params['N_av'], 150, 1]
@@ -51,8 +51,8 @@ class EpidemicVaccination(BaseEnv):
         super().__init__(cost_function=cost_function,
                          model=model,
                          simulation_horizon=simulation_horizon,
-                         dim_action=2,
-                         discrete=True,
+                         dim_action=8,
+                         discrete=False,
                          seed=seed)
 
         self.ratio_death_to_R = ratio_death_to_R
@@ -67,6 +67,8 @@ class EpidemicVaccination(BaseEnv):
         self.betas = [self.b0] + [np.exp(self.model.current_internal_params['beta{}'.format(i + 1)]) for i in range(4)]  # factors of reduction for each stage
         self.bs = None
 
+
+    # Maybe need to be deleted or replaced by something more useful for vaccination
     def _compute_b(self, times_since_start, times_since_last):
         """
         Computes the transmission rate depending on the number of days since the last lock-down or since beginning of the current lock-down.
@@ -118,6 +120,7 @@ class EpidemicVaccination(BaseEnv):
             self.previous_env_state = self.env_state.copy()
             self.previous_env_state_labelled = self.env_state_labelled.copy()
 
+
     def _update_env_state(self):
         """
         Update the environment state.
@@ -141,14 +144,15 @@ class EpidemicVaccination(BaseEnv):
             self.previous_env_state = self.env_state.copy()
             self.previous_env_state_labelled = self.env_state_labelled.copy()
 
+
     def reset_same_model(self):
         """
         To call if you want to reset to the same model the next time you call reset.
         Will be cancelled after the first reset, it needs to be called again each time.
 
-
         """
         self.reset_same = True
+
 
     def reset(self):
         """
@@ -200,6 +204,7 @@ class EpidemicVaccination(BaseEnv):
 
         return self._normalize_env_state(self.env_state)
 
+
     def update_with_action(self, action):
         """
         Implement effect of action on transmission rate.
@@ -239,6 +244,7 @@ class EpidemicVaccination(BaseEnv):
         since_last = np.arange(previous_count_last, self.count_since_last_lockdown)
         self.bs = self._compute_b(times_since_start=since_start, times_since_last=since_last)
         self.model.current_internal_params['b_fit'] = self.b
+
 
     def step(self, action):
         """
@@ -374,15 +380,15 @@ if __name__ == '__main__':
     from epidemioptim.environments.cost_functions import get_cost_function
     from epidemioptim.environments.models import get_model
 
-    simulation_horizon = 364
+    simulation_horizon = 731
     stochastic = False
-    region = 'IDF'
+    age_group = '0-4'
 
-    model = get_model(model_id='prague_seirah', params=dict(region=region,
+    model = get_model(model_id='heffernan_model', params=dict(age_group=age_group,
                                                       stochastic=stochastic))
-
-    N_region = model.pop_sizes[region]
-    N_country = np.sum(list(model.pop_sizes.values()))
+    # To delete if no GDP recess cost function
+    N_region = model.pop_size[age_group]
+    N_country = np.sum(list(model.pop_size.values()))
     ratio_death_to_R = 0.005
 
     cost_func = get_cost_function(cost_function_id='multi_cost_death_gdp_controllable', params=dict(N_region=N_region,
@@ -396,9 +402,10 @@ if __name__ == '__main__':
                    simulation_horizon=simulation_horizon)
     env.reset()
 
+    # Maybe here were to say which action to take
     actions = np.random.choice([0, 1], size=53)
     actions = np.zeros([53])
-    actions[3:3+8] = 1
+    actions[3:3+8] = 1  # from week 4 to 11 = lockdown
     t = 0
     r = 0
     done = False

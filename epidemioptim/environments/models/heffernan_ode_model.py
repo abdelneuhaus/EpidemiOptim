@@ -1,4 +1,5 @@
 import numpy as np
+from numpy.core.numerictypes import maximum_sctype
 from odeintw import odeintw
 
 from epidemioptim.environments.models.base_model import BaseModel
@@ -141,6 +142,16 @@ class HeffernanOdeModel(BaseModel):
                 stochastic=False,
                 range_delay=None
                 ):
+    
+        # Groups and raw data
+        self._age_groups = ['0-4', '5-9', '10-14', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44', '45-49', '50-54', '55-59', '60-64', '65-69',  '70-74', '75+']
+        self._pop_size = pd.read_excel(PATH_TO_DATA, sheet_name='population', skiprows=3, usecols=(2,2))
+        self.pop_size = dict(zip(self._age_groups, (self._pop_size['Unnamed: 2'])))
+        self.step_list = [0, 71, 73, 76, 153, 173, 185, 201, 239, 244, 290, 295, 303, 305, 349, 353, 368, 369, 370, 377, 381, 384, 
+                          391, 398, 402, 404, 405, 409, 412, 418, 419, 425, 426, 431, 433, 440, 447, 454, 459, 461, 465, 468, 472, 
+                          475, 481, 482, 488, 489, 494, 496, 497, 501, 503, 510, 517, 524, 531, 552, 592, 609, 731]
+
+        # Matrices
         self.p1 = get_text_file_data(PATH_TO_COMORBIDITY_MATRIX)
         self.p2 = get_text_file_data(PATH_TO_COMORBIDITY_MATRIX)
         self.p3 = [[0] + sub[1:] for sub in self.p1]
@@ -150,15 +161,19 @@ class HeffernanOdeModel(BaseModel):
         self.school = get_text_file_data(PATH_TO_SCHOOL_MATRIX)
         self.perturbations_matrices = get_perturbations_matrices(PATH_TO_DATA)
         self.contact_modifiers = get_contact_modifiers(PATH_TO_DATA)
+        self.transition_matrices = get_transition_matrices(self.pop_size, self.home, self.school, self.work, self.other)
+
+        # Vaccination data
+        self.vaccine_groups = {}
+        self.doses_number = [1679218, 3008288, 6026744, 12000000, 12000000, 12000000, 12000000, 12000000, 12000000, 0, 0]
         self.vaccination_coverage = get_coverage(PATH_TO_DATA)
         self.active_vaccination = vaccination_active(PATH_TO_DATA)
-        self._age_groups = ['0-4', '5-9', '10-14', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44', '45-49', '50-54', '55-59', '60-64', '65-69',  '70-74', '75+']
-        self._pop_size = pd.read_excel(PATH_TO_DATA, sheet_name='population', skiprows=3, usecols=(2,2))
-        self.pop_size = dict(zip(self._age_groups, (self._pop_size['Unnamed: 2'])))
-        self.transition_matrices = get_transition_matrices(self.pop_size, self.home, self.school, self.work, self.other)
-        self.step_list = [0, 71, 73, 76, 153, 173, 185, 201, 239, 244, 290, 295, 303, 305, 349, 353, 368, 369, 370, 377, 381, 384, 391, 398, 402, 
-                     404, 405, 409, 412, 418, 419, 425, 426, 431, 433, 440, 447, 454, 459, 461, 465, 468, 472 , 475, 481, 482, 488, 
-                     489, 494, 496, 497, 501, 503, 510, 517, 524, 531, 552, 592, 609, 731]
+        self._target_groups = get_target_population(self._age_groups)
+        self.target_groups = None
+        self.mitigation_windows = [71, 2, 3,77, 20, 12, 16, 38, 5, 46, 5, 8, 2, 44, 4, 16, 1, 7, 4, 3, 7, 7, 4, 2, 1, 4, 3, 6, 1, 
+                                   6, 1, 5, 2, 7, 7, 7, 5, 2, 4, 3, 4, 3, 6, 1, 6, 1, 5, 2, 1, 4, 2, 7, 7, 7, 7, 21, 26, 31, 30, 92]
+        
+        # Tracking variables
         self.step = 0
         self.t = 0
         self.k = 1
@@ -185,6 +200,32 @@ class HeffernanOdeModel(BaseModel):
                          range_delay=range_delay)
 
 
+    def calculate_sigma(self, sbgrp):
+        """
+        Regarding the subgroup, find the vaccine group and if vaccine is "on" or "off" in the group.
+        Then, calculate sigma regarding the "on/off" situation (sigma = 0 if "off")
+        """
+        vacStep = 0
+        sigma = None
+        deltaCoverage = []
+        maxcoverage = [x*100 for x in self.vaccination_coverage]
+        deltaCoverage[0] = maxcoverage[0]
+        for i in range(1, len(maxcoverage)):
+            if maxcoverage[i] != maxcoverage[i-1]:
+                deltaCoverage[i] = maxcoverage[i] - maxcoverage[i-1]
+            else:
+                deltaCoverage[i] = maxcoverage[i-1]
+        for i in range(len(deltaCoverage)):
+            if deltaCoverage[i] == 0:
+                deltaCoverage[i] = 10e-6 
+        
+        lowVP = 1
+        if self.active_vaccination[self.step] == 1:
+            pi = lowVP*(deltaCoverage[vacStep]/100)
+            popFrance = sum(self._pop_size['Unnamed: 2'])
+        return sigma
+
+
     def define_params_and_initial_state_distributions(self):
         """
         Extract and define distributions of parameters for all age groups
@@ -203,8 +244,8 @@ class HeffernanOdeModel(BaseModel):
                                                          p1=np.array(self.p1).T,
                                                          p2=np.array(self.p2).T,
                                                          p3=np.array(self.p3).T,
-                                                         rho=0,
-                                                         sigma=0#sigma_calculation(0, self.active_vaccination, self.vaccination_coverage)
+                                                         rho=0.84,
+                                                         sigma=sigma_calculation(0, self.active_vaccination, self.vaccination_coverage)
                                                          )
 
             self._all_initial_state_distribs[i] = dict(S20=DiracDist(params=0, stochastic=self.stochastic),
@@ -360,7 +401,47 @@ class HeffernanOdeModel(BaseModel):
         else:
             return np.atleast_2d(z[1:])
 
-# put into utils
+    def get_pop_vaccine_groups(self):
+        """
+        Return the total number of people in the 3 neo-groups (S compartment only)
+        """
+        a = ['0-4', '5-9', '10-14', '15-19']
+        b = ['20-24', '25-29', '30-34', '35-39', '40-44', '45-49', '50-54']
+        c = ['55-59', '60-64', '65-69',  '70-74', '75+']
+        groups = ['0-19', '20-54', '55+']
+        for i in groups :
+            self.vaccine_groups[i] = {}
+        sumA, sumB, sumC = 0, 0, 0
+        for i in a:
+            sumA += (self.current_state[i]['S1'] + self.current_state[i]['S2'] + self.current_state[i]['S3'] + self.current_state[i]['S4'])
+        for i in b:
+            sumB += (self.current_state[i]['S1'] + self.current_state[i]['S2'] + self.current_state[i]['S3'] + self.current_state[i]['S4'])
+        for i in c:
+            sumC += (self.current_state[i]['S1'] + self.current_state[i]['S2'] + self.current_state[i]['S3'] + self.current_state[i]['S4'])
+        self.vaccine_groups['0-19']['S'] = sumA
+        self.vaccine_groups['20-54']['S'] = sumB
+        self.vaccine_groups['55+']['S'] = sumC
+
+
+    def merge_vaccine_choice(self):
+        data = []
+        for j in self._target_groups:
+            idx = 0
+            sublist = []
+            for i in range(4):
+                idx = 1 if j[i] != '0.0' else 0
+            sublist.append(idx)          
+            for i in range(4,11):
+                idx = 1 if j[i] != '0.0' else 0             
+            sublist.append(idx)
+            for i in range(11,16):
+                idx = 1 if j[i] != '0.0' else 0            
+            sublist.append(idx)
+            data.append(sublist)
+        self.target_groups = data
+
+
+# UTILS
 def plot_preds(t, states):
     plt.plot(t, states[0], color='b', label='0-4')
     plt.plot(t, states[1], color='r', label='5-9')
@@ -399,7 +480,7 @@ if __name__ == '__main__':
     model = HeffernanOdeModel(age_group='0-4', stochastic=False)
 
     # Run simulation
-    simulation_horizon = 365
+    simulation_horizon = 2
     model_states = []
     for i in range(simulation_horizon):
         model_state = model.run_n_steps()
@@ -408,7 +489,7 @@ if __name__ == '__main__':
     # Plot
     time = np.arange(simulation_horizon)
     labels = ['0-4', '5-9', '10-14', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44', '45-49', '50-54', '55-59', '60-64', '65-69',  '70-74', '75+']
-    plot_preds(t=time,
-               states=np.array(model_states).transpose()[23])
+    # plot_preds(t=time,
+    #            states=np.array(model_states).transpose()[13])
     #plot_comparison(get_MATLAB_res(), np.array(model_states).transpose()[23])
 

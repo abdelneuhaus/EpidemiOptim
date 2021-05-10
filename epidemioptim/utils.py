@@ -737,7 +737,7 @@ def nu_value(t, path=get_repo_path() + '/data/jane_model_data/ScenarioPlanFrance
             return vocInfect*vocpercent[i]/100
 
 
-def get_target_population(t, age_group, path = get_repo_path() + '/data/jane_model_data/ScenarioPlanFranceOne.xlsx'):
+def get_target_population(age_group, path = get_repo_path() + '/data/jane_model_data/ScenarioPlanFranceOne.xlsx'):
     _data = pd.read_excel(path, sheet_name='targetPopulation', skiprows=0, usecols=(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16)).fillna(0).values.tolist()
     val = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
     for i in range(len(val)):
