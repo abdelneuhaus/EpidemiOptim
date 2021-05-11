@@ -4,18 +4,18 @@ import math
 from epidemioptim.environments.gym_envs.base_env import BaseEnv
 
 
-class EpidemicVaccination(BaseEnv):
+class EpidemicDiscrete(BaseEnv):
     def __init__(self,
                  cost_function,
                  model,
                  simulation_horizon,
-                 ratio_death_to_R=0.0001,
+                 ratio_death_to_R=0.0001,  # death ratio among people who were infected
                  time_resolution=30,
                  seed=np.random.randint(1e6)
                  ):
         """
-        EpidemicVaccination environment is based on the Epidemiological model developed by LChilds, JGlasser, ZFeng, JHeffernan, 
-        JLi, GRost and on a one-objective cost function (death toll).
+        EpidemicDiscrete environment is based on the Epidemiological SEIRAH model from Prague et al., 2020 and on a bi-objective
+        cost function (death toll and gdp recess).
 
         Parameters
         ----------
@@ -43,8 +43,8 @@ class EpidemicVaccination(BaseEnv):
         self.cumulative_costs = [0 for _ in range(self.nb_costs)]
 
         # Initialize states
-        self.state_labels = self.model.internal_states_labels + ['previous_vaccination_politic', 'current_vaccination_politic'] + \
-            ['cumulative_cost_{}'.format(id_cost) for id_cost in range(self.cost_function.nb_costs)]
+        self.state_labels = self.model.internal_states_labels + ['previous_lockdown_state', 'current_lockdown_state'] + \
+            ['cumulative_cost_{}'.format(id_cost) for id_cost in range(self.cost_function.nb_costs)] + ['level_b']
         self.label_to_id = dict(zip(self.state_labels, np.arange(len(self.state_labels))))
         
 
@@ -63,20 +63,38 @@ class EpidemicVaccination(BaseEnv):
         # Action modalities
         self.doses_number = (1679218, 3008288, 6026744, 12000000, 12000000, 12000000, 12000000, 12000000, 12000000, 0, 0)
         self.sigma = []
+        self.vacStep = 0
         self.grp1 = ['0-4', '5-9', '10-14', '15-19']
         self.grp2 = ['20-24', '25-29', '30-34', '35-39', '40-44', '45-49', '50-54']
         self.grp3 = ['55-59', '60-64', '65-69',  '70-74', '75+']
 
 
-    def _compute_sigma(self, action):
-        for i in range(action):
-            if action[i] == 0:
-                self.sigma.append(0)
+    def _compute_sigma(self, times_since_start, times_since_last):
+        """
+        Computes the transmission rate depending on the number of days since the last lock-down or since beginning of the current lock-down.
+
+        Parameters
+        ----------
+        times_since_start: nd.array of ints
+            Time since the start of the current lock-down, for each day.
+        times_since_last: nd.array of ints
+            Time since the last lock-down, for each day.
+
+        Returns
+        -------
+        list
+            The values of transmission rates for each day.
+        """
+        sigma = []
+        sigmas = []
+        for i in self.vaccination_politic:
+            if i == 0:
+                # if no vaccination
+                assert times_since_start.size == 0
+                sigmas.append(0)
             else:
-                vacStep = 0
-                sigma = None
                 deltaCoverage = []
-                maxcoverage = [x*100 for x in model.vaccination_coverage]
+                maxcoverage = [x*100 for x in self.model.vaccination_coverage]
                 deltaCoverage[0] = maxcoverage[0]
                 for i in range(1, len(maxcoverage)):
                     if maxcoverage[i] != maxcoverage[i-1]:
@@ -88,7 +106,7 @@ class EpidemicVaccination(BaseEnv):
                         deltaCoverage[i] = 10e-6 
 
                 lowVP = 1
-                pi = lowVP*(deltaCoverage[vacStep]/100)
+                pi = lowVP*(deltaCoverage[self.vacStep]/100)
                 popFrance = sum(model._pop_size['Unnamed: 2'])
                 if i == 0:
                     vaccage = model.vaccine_groups['0-19']['S']
@@ -100,9 +118,7 @@ class EpidemicVaccination(BaseEnv):
                 if g>1:
                     g=0
                 sigma = 1/self.time_resolution*(-math.log10(1-g))
-            
-            self.sigma.append(sigma)
-
+        return sigma
 
     def _update_previous_env_state(self):
         """
@@ -113,16 +129,17 @@ class EpidemicVaccination(BaseEnv):
             self.previous_env_state = self.env_state.copy()
             self.previous_env_state_labelled = self.env_state_labelled.copy()
 
-
     def _update_env_state(self):
         """
         Update the environment state.
 
         """
+
         # Update env state
         self.env_state_labelled = dict(zip(self.model.internal_states_labels, self.model_state))
-        self.env_state_labelled.update(previous_vaccination_politic=self.previous_vaccination_politic,
-                                       current_vaccination_politic=self.vaccination_politic)
+        self.env_state_labelled.update(previous_lockdown_state=self.previous_lockdown_state,
+                                       current_lockdown_state=self.lockdown_state,
+                                       level_b=self.level_b)
         # track cumulative costs in the state.
         for id_cost in range(self.nb_costs):
             self.env_state_labelled['cumulative_cost_{}'.format(id_cost)] = self.cumulative_costs[id_cost]
@@ -135,15 +152,14 @@ class EpidemicVaccination(BaseEnv):
             self.previous_env_state = self.env_state.copy()
             self.previous_env_state_labelled = self.env_state_labelled.copy()
 
-
     def reset_same_model(self):
         """
         To call if you want to reset to the same model the next time you call reset.
         Will be cancelled after the first reset, it needs to be called again each time.
 
+
         """
         self.reset_same = True
-
 
     def reset(self):
         """
@@ -162,18 +178,20 @@ class EpidemicVaccination(BaseEnv):
                             actions=[],
                             aggregated_costs=[],
                             costs=[],
-                            vaccination_actions=[],
-                            deaths=[]
-                            )
+                            lockdown=[],
+                            deaths=[],
+                            b=[])
         # initialize time and lockdown days counter
         self.t = 0
         self.count_lockdown = 0
         self.count_deaths = 0
-        self.count_since_start_campaign = 0
-        self.count_since_last_politic_change = 0
+        self.count_since_start_lockdown = 0
+        self.count_since_last_lockdown = 0
+        self.level_b = 0
+        self.b = self.model.current_internal_params['b_fit']
 
-        self.vaccination_politic = [0,0,0]  # 0 not lockdown, 1 lockdown
-        self.previous_vaccination_politic = self.vaccination_politic
+        self.lockdown_state = 0  # 0 not lockdown, 1 lockdown
+        self.previous_lockdown_state = self.lockdown_state
         self.cumulative_costs = [0 for _ in range(self.nb_costs)]
 
         # initialize model internal state and params
@@ -193,31 +211,45 @@ class EpidemicVaccination(BaseEnv):
 
         return self._normalize_env_state(self.env_state)
 
-
     def update_with_action(self, action):
         """
-        Implement effect of action on vaccination campaign.
+        Implement effect of action on transmission rate.
 
         Parameters
         ----------
         action: int
-            Action is 0 (no vaccination) or 1 (vaccination) for three age groups.
+            Action is 0 (no lock-down) or 1 (lock-down).
 
         """
 
         # Translate actions
-        self.previous_vaccination_politic = self.vaccination_politic
-        
-        # Modify model parameters based on group to vaccine
-        self._compute_sigma(action)
-        for i in self.model.current_internal_params.keys():
-            if i in self.grp1:
-                self.model.current_internal_params[i]['sigma'] = self.sigma[0]
-            elif i in self.grp2:
-                self.model.current_internal_params[i]['sigma'] = self.sigma[1]
-            else:
-                self.model.current_internal_params[i]['sigma'] = self.sigma[2]
+        self.previous_lockdown_state = self.lockdown_state
+        previous_count_start = self.count_since_start_lockdown
+        previous_count_last = self.count_since_last_lockdown
 
+        if action == 0:
+            # no lock-down
+            self.jump_of = min(self.time_resolution, self.simulation_horizon - self.t)
+            self.lockdown_state = 0
+            if self.previous_lockdown_state == self.lockdown_state:
+                self.count_since_last_lockdown += self.jump_of
+            else:
+                self.count_since_last_lockdown = self.jump_of
+                self.count_since_start_lockdown = 0
+        else:
+            self.jump_of = min(self.time_resolution, self.simulation_horizon - self.t)
+            self.lockdown_state = 1
+            if self.lockdown_state == self.previous_lockdown_state:
+                self.count_since_start_lockdown += self.jump_of
+            else:
+                self.count_since_start_lockdown = self.jump_of
+                self.count_since_last_lockdown = 0
+
+        # Modify model parameters based on lockdown state
+        since_start = np.arange(previous_count_start, self.count_since_start_lockdown)
+        since_last = np.arange(previous_count_last, self.count_since_last_lockdown)
+        self.bs = self._compute_b(times_since_start=since_start, times_since_last=since_last)
+        self.model.current_internal_params['b_fit'] = self.b
 
     def step(self, action):
         """
@@ -226,7 +258,8 @@ class EpidemicVaccination(BaseEnv):
         Parameters
         ----------
         action: int
-            Action is 0 (no vaccination) or 1 (vaccination) for a group.
+            Action is 0 (no lock-down) or 1 (lock-down).
+
 
         Returns
         -------
@@ -240,12 +273,12 @@ class EpidemicVaccination(BaseEnv):
             Further infos. In our case, the costs, icu capacity of the region and whether constraints are violated.
 
         """
-        action = list(action)
-        #assert 0 <= action < self.dim_action
+        action = int(action)
+        assert 0 <= action < self.dim_action
 
         self.update_with_action(action)
-        # if self.lockdown_state == 1:
-        #     self.count_lockdown += self.jump_of
+        if self.lockdown_state == 1:
+            self.count_lockdown += self.jump_of
 
         # Run model for jump_of steps
         model_state = [self.model_state]
@@ -361,7 +394,7 @@ if __name__ == '__main__':
     # To delete if no GDP recess cost function
     N_region = model.pop_size[age_group]
     N_country = np.sum(list(model.pop_size.values()))
-    ratio_death_to_R = 0.005
+    ratio_death_to_R = 0.0001
 
     cost_func = get_cost_function(cost_function_id='multi_cost_death_gdp_controllable', params=dict(N_region=N_region,
                                                                                                     N_country=N_country,

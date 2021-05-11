@@ -165,12 +165,11 @@ class HeffernanOdeModel(BaseModel):
 
         # Vaccination data
         self.vaccine_groups = {}
-        self.doses_number = [1679218, 3008288, 6026744, 12000000, 12000000, 12000000, 12000000, 12000000, 12000000, 0, 0]
         self.vaccination_coverage = get_coverage(PATH_TO_DATA)
         self.active_vaccination = vaccination_active(PATH_TO_DATA)
         self._target_groups = get_target_population(self._age_groups)
         self.target_groups = None
-        self.mitigation_windows = [71, 2, 3,77, 20, 12, 16, 38, 5, 46, 5, 8, 2, 44, 4, 16, 1, 7, 4, 3, 7, 7, 4, 2, 1, 4, 3, 6, 1, 
+        self.mitigation_windows = [71, 2, 3, 77, 20, 12, 16, 38, 5, 46, 5, 8, 2, 44, 4, 16, 1, 7, 4, 3, 7, 7, 4, 2, 1, 4, 3, 6, 1, 
                                    6, 1, 5, 2, 7, 7, 7, 5, 2, 4, 3, 4, 3, 6, 1, 6, 1, 5, 2, 1, 4, 2, 7, 7, 7, 7, 21, 26, 31, 30, 92]
         
         # Tracking variables
