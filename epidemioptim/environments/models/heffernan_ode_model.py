@@ -85,7 +85,6 @@ def vaccination_model(y: tuple,
     V11, V21, V31, V41 = origin[13], origin[14], origin[15], origin[16]
     V12, V22, V32, V42 = origin[17], origin[18], origin[19], origin[20]
     I2, I3, I4 = origin[21], origin[22], origin[23]
-
     # Infect calculation
     T = S1 + S2 + S3 + S4 + E21 + E22 + E23 + E31 + E32 + E33 + E41 + E42 + E43 + V11 + V21 + V31 + V41 + V12 + V22 + V32 + V42 + I2 + I3 + I4
     Xm = sum(np.multiply((beta+beta*nu), np.array((I2,I3,I4)).T).T)
@@ -164,7 +163,7 @@ class HeffernanOdeModel(BaseModel):
         self.transition_matrices = get_transition_matrices(self.pop_size, self.home, self.school, self.work, self.other)
 
         # Vaccination data
-        self.vaccine_groups = {}
+        self.vaccine_groups = None
         self.vaccination_coverage = get_coverage(PATH_TO_DATA)
         self.active_vaccination = vaccination_active(PATH_TO_DATA)
         self._target_groups = get_target_population(self._age_groups)
@@ -199,32 +198,6 @@ class HeffernanOdeModel(BaseModel):
                          range_delay=range_delay)
 
 
-    def calculate_sigma(self, sbgrp):
-        """
-        Regarding the subgroup, find the vaccine group and if vaccine is "on" or "off" in the group.
-        Then, calculate sigma regarding the "on/off" situation (sigma = 0 if "off")
-        """
-        vacStep = 0
-        sigma = None
-        deltaCoverage = []
-        maxcoverage = [x*100 for x in self.vaccination_coverage]
-        deltaCoverage[0] = maxcoverage[0]
-        for i in range(1, len(maxcoverage)):
-            if maxcoverage[i] != maxcoverage[i-1]:
-                deltaCoverage[i] = maxcoverage[i] - maxcoverage[i-1]
-            else:
-                deltaCoverage[i] = maxcoverage[i-1]
-        for i in range(len(deltaCoverage)):
-            if deltaCoverage[i] == 0:
-                deltaCoverage[i] = 10e-6 
-        
-        lowVP = 1
-        if self.active_vaccination[self.step] == 1:
-            pi = lowVP*(deltaCoverage[vacStep]/100)
-            popFrance = sum(self._pop_size['Unnamed: 2'])
-        return sigma
-
-
     def define_params_and_initial_state_distributions(self):
         """
         Extract and define distributions of parameters for all age groups
@@ -244,7 +217,7 @@ class HeffernanOdeModel(BaseModel):
                                                          p2=np.array(self.p2).T,
                                                          p3=np.array(self.p3).T,
                                                          rho=0.84,
-                                                         sigma=sigma_calculation(0, self.active_vaccination, self.vaccination_coverage)
+                                                         sigma=np.array(duplicate_data(sigma_calculation(0, self.active_vaccination, self.vaccination_coverage), 16))
                                                          )
 
             self._all_initial_state_distribs[i] = dict(S20=DiracDist(params=0, stochastic=self.stochastic),
@@ -280,7 +253,6 @@ class HeffernanOdeModel(BaseModel):
         self.current_state = dict()
         for i in self._age_groups:
             self.current_state[i] = dict(zip(self.internal_states_labels, np.array([self.initial_state[i]['{}0'.format(s)] for s in self.internal_states_labels])))
-
 
     def _get_model_params(self) -> tuple:
         """
@@ -383,6 +355,7 @@ class HeffernanOdeModel(BaseModel):
         if current_state is None:
             current_state = np.array(self._get_current_state())
         if(self.t == self.step_list[self.step]):
+            print(self.t)
             self.k = k_value(self.t)
             self.step += 1
         A_c = calculate_A_and_c(self.step-1, self.k, self.contact_modifiers, self.perturbations_matrices, self.transition_matrices)
@@ -408,8 +381,9 @@ class HeffernanOdeModel(BaseModel):
         b = ['20-24', '25-29', '30-34', '35-39', '40-44', '45-49', '50-54']
         c = ['55-59', '60-64', '65-69',  '70-74', '75+']
         groups = ['0-19', '20-54', '55+']
+        vaccine_groups = {}
         for i in groups :
-            self.vaccine_groups[i] = {}
+            vaccine_groups[i] = {}
         sumA, sumB, sumC = 0, 0, 0
         for i in a:
             sumA += (self.current_state[i]['S1'] + self.current_state[i]['S2'] + self.current_state[i]['S3'] + self.current_state[i]['S4'])
@@ -417,10 +391,10 @@ class HeffernanOdeModel(BaseModel):
             sumB += (self.current_state[i]['S1'] + self.current_state[i]['S2'] + self.current_state[i]['S3'] + self.current_state[i]['S4'])
         for i in c:
             sumC += (self.current_state[i]['S1'] + self.current_state[i]['S2'] + self.current_state[i]['S3'] + self.current_state[i]['S4'])
-        self.vaccine_groups['0-19']['S'] = sumA
-        self.vaccine_groups['20-54']['S'] = sumB
-        self.vaccine_groups['55+']['S'] = sumC
-
+        vaccine_groups['0-19']['S'] = sumA
+        vaccine_groups['20-54']['S'] = sumB
+        vaccine_groups['55+']['S'] = sumC
+        return vaccine_groups
 
     def merge_vaccine_choice(self):
         data = []
@@ -479,7 +453,7 @@ if __name__ == '__main__':
     model = HeffernanOdeModel(age_group='0-4', stochastic=False)
 
     # Run simulation
-    simulation_horizon = 2
+    simulation_horizon = 731
     model_states = []
     for i in range(simulation_horizon):
         model_state = model.run_n_steps()
@@ -488,7 +462,7 @@ if __name__ == '__main__':
     # Plot
     time = np.arange(simulation_horizon)
     labels = ['0-4', '5-9', '10-14', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44', '45-49', '50-54', '55-59', '60-64', '65-69',  '70-74', '75+']
-    # plot_preds(t=time,
-    #            states=np.array(model_states).transpose()[13])
+    plot_preds(t=time,
+               states=np.array(model_states).transpose()[23])
     #plot_comparison(get_MATLAB_res(), np.array(model_states).transpose()[23])
 

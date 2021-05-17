@@ -20,7 +20,7 @@ plt.rcParams['figure.constrained_layout.use'] = True
 # # # # # # # # # # # # # # # # # # # # # # # #
 
 
-def plot_stats(t, states, labels, legends=None, title=None, lockdown=None, icu_capacity=None, axs=None, fig=None, time_jump=1, show=False):
+def plot_stats(t, states, labels, legends=None, title=None, lockdown=None, vaccination=None, icu_capacity=None, axs=None, fig=None, time_jump=1, show=False):
     n_plots = len(states)
     if axs is None:
         print_a = True
@@ -698,7 +698,7 @@ def sigma_calculation(step, boolVaccination, coverage):
 
 
 def get_coverage(path):
-    _coverage = pd.read_excel(path, sheet_name='coverage', skiprows=0, usecols=(1,1)).fillna(0).values.tolist()
+    _coverage = pd.read_excel(path, sheet_name='coverage', skiprows=16, usecols=(1,1)).fillna(0).values.tolist()
     return [x for y in _coverage for x in y]
 
 
