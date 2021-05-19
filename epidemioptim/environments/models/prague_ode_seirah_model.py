@@ -250,7 +250,7 @@ if __name__ == '__main__':
                                  stochastic=False)
 
     # Run simulation
-    simulation_horizon = 364
+    simulation_horizon = 366
     model_states = model.run_n_steps(n=simulation_horizon)
 
     # Plot

@@ -64,7 +64,7 @@ class EpidemicVaccination(BaseEnv):
         self.history = None
 
         # Action modalities
-        self.doses_number = (1679218, 3008288, 6026744, 12000000, 12000000, 12000000, 12000000, 12000000, 12000000, 0, 0)
+        #self.doses_number = (1679218, 3008288, 6026744, 12000000, 12000000, 12000000, 12000000, 12000000, 12000000, 0, 0)
         self.sigma = []
         self.vaccine_groups = self.model.get_pop_vaccine_groups()
         self.vacStep = 0
@@ -204,10 +204,10 @@ class EpidemicVaccination(BaseEnv):
         # initialize time and lockdown days counter
         self.t = 0
         self.count_deaths = 0
-        self.count_since_start_lockdown = 0
-        self.count_since_last_lockdown = 0
+        self.count_since_start_politic = 0
+        self.count_since_last_politic = 0
 
-        self.vaccination_politic = [0,0,0]
+        self.vaccination_politic = [0,0,1]
         self.previous_politic = self.vaccination_politic
         self.cumulative_costs = [0 for _ in range(self.nb_costs)]
 
@@ -230,43 +230,38 @@ class EpidemicVaccination(BaseEnv):
 
     def update_with_action(self, action):
         """
-        Implement effect of action on transmission rate.
+        Implement effect of vaccination on vaccination rate.
 
         Parameters
         ----------
         action: int
-            Action is 0 (no lock-down) or 1 (lock-down).
+            Action is a list with 0 (no vaccination) or 1 (vaccination).
 
         """
 
         # Translate actions
         self.previous_politic = self.vaccination_politic
-        previous_count_start = self.count_since_start_lockdown
-        previous_count_last = self.count_since_last_lockdown
         
         for i in range(len(action)):
             if action[i] == 0:
-                # no lock-down
+                # no vaccination
                 self.jump_of = min(self.time_resolution, self.simulation_horizon - self.t)
-                print(self.jump_of)
                 self.vaccination_politic[i] = 0
                 if self.previous_politic[i] == self.vaccination_politic[i]:
-                    self.count_since_last_lockdown += self.jump_of
+                    self.count_since_last_politic += self.jump_of
                 else:
-                    self.count_since_last_lockdown = self.jump_of
-                    self.count_since_start_lockdown = 0
+                    self.count_since_last_politic = self.jump_of
+                    self.count_since_start_politic = 0
             else:
                 self.jump_of = min(self.time_resolution, self.simulation_horizon - self.t)
                 self.vaccination_politic[i] = 1
                 if self.vaccination_politic[i] == self.previous_politic[i]:
-                    self.count_since_start_lockdown += self.jump_of
+                    self.count_since_start_politic += self.jump_of
                 else:
-                    self.count_since_start_lockdown = self.jump_of
-                    self.count_since_last_lockdown = 0
+                    self.count_since_start_politic = self.jump_of
+                    self.count_since_last_politic = 0
 
         # Modify model parameters based on lockdown state
-        since_start = np.arange(previous_count_start, self.count_since_start_lockdown)
-        since_last = np.arange(previous_count_last, self.count_since_last_lockdown)
         self.sigma = self._compute_sigma()
         for i in range(16):
             if i in [0,1,2,3]:
@@ -284,8 +279,7 @@ class EpidemicVaccination(BaseEnv):
         Parameters
         ----------
         action: int
-            Action is 0 (no lock-down) or 1 (lock-down).
-
+            Action is a list with 0 (no vaccination) or 1 (vaccination).
 
         Returns
         -------
@@ -316,13 +310,12 @@ class EpidemicVaccination(BaseEnv):
         self._update_env_state()
 
         # Store history
-        #print(np.atleast_2d(self.previous_env_state))
         costs = self.cost_function.compute_cost(previous_state=np.atleast_2d(self.previous_env_state),
                                                 state=np.atleast_2d(self.env_state),
                                                 label_to_id=self.label_to_id,
                                                 action=action,
                                                 others=dict(jump_of=self.time_resolution))
-        #print(costs)
+
         self.cumulative_costs[0] += costs
         n_deaths = self.cost_function.compute_cost(previous_state=np.atleast_2d(self.previous_env_state),
                                                      state=np.atleast_2d(self.env_state),
@@ -361,14 +354,12 @@ class EpidemicVaccination(BaseEnv):
 
     # Format data for plotting
     def get_data(self):
-
         data = dict(history=self.history.copy(),
                     time_jump=1,
                     model_states_labels=self.model.internal_states_labels
                     )
         t = self.history['env_timesteps']
         cumulative_death = [np.sum(self.history['deaths'][:i]) for i in range(len(t) - 1)]
-        betas = [0, 0.25, 0.5, 0.75, 1]
         costs = np.array(self.history['costs'])
         to_plot = [np.array(self.history['deaths']),
                    np.array(cumulative_death),
@@ -391,7 +382,7 @@ if __name__ == '__main__':
     from epidemioptim.environments.cost_functions import get_cost_function
     from epidemioptim.environments.models import get_model
 
-    simulation_horizon = 12
+    simulation_horizon = 365
     stochastic = False
     age_group = '0-4'
 
@@ -426,14 +417,14 @@ if __name__ == '__main__':
     # plot_stats(t=stats['history']['env_timesteps'],
     #            states=np.array(stats['history']['model_states']).transpose(),
     #            labels=stats['model_states_labels'],
-    #            vaccinations=np.array(stats['history']['vaccinations']),
+    #            vaccination=np.array(stats['history']['vaccinations']),
     #            time_jump=stats['time_jump'])
-    plot_stats(t=stats['history']['env_timesteps'][1:],
-               states=stats['stats_run']['to_plot'],
-               labels=stats['stats_run']['labels'],
-               legends=stats['stats_run']['legends'],
-               title=stats['title'],
-               vaccination=np.array(stats['history']['vaccinations']),
-               time_jump=stats['time_jump'],
-               show=True
-               )
+    # plot_stats(t=stats['history']['env_timesteps'][1:],
+    #            states=stats['stats_run']['to_plot'],
+    #            labels=stats['stats_run']['labels'],
+    #            legends=stats['stats_run']['legends'],
+    #            title=stats['title'],
+    #            vaccination=np.array(stats['history']['vaccinations']),
+    #            time_jump=stats['time_jump'],
+    #            show=True
+    #            )

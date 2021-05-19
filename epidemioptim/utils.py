@@ -598,18 +598,17 @@ def get_perturbations_matrices(path):
     wf1 = pertubations_matrices.iloc[2:18,37:53].values.tolist()
     wf2 = pertubations_matrices.iloc[21:37,37:53].values.tolist()
     wf3 = pertubations_matrices.iloc[40:56, 37:53].values.tolist()
-    
     return [sf1, sf2, sf3, sf4, sf5, sf6, wf1, wf2, wf3, of1, of2, of3]
 
 
 def get_contact_modifiers(path):
     modifier = pd.read_excel(path, sheet_name='contactModifiersFull')
-    E1 = modifier.iloc[2:63,2:5].values.tolist()
-    E2 = modifier.iloc[2:63,6:9].values.tolist()
-    E3 = modifier.iloc[2:63,10:13].values.tolist()
-    E4 = modifier.iloc[2:63,14:17].values.tolist()
-    E5 = modifier.iloc[2:63,18:21].values.tolist()
-    Ebase = modifier.iloc[2:63,22:25].values.tolist()
+    E1 = modifier.iloc[2:74,2:5].values.tolist()
+    E2 = modifier.iloc[2:74,6:9].values.tolist()
+    E3 = modifier.iloc[2:74,10:13].values.tolist()
+    E4 = modifier.iloc[2:74,14:17].values.tolist()
+    E5 = modifier.iloc[2:74,18:21].values.tolist()
+    Ebase = modifier.iloc[2:74,22:25].values.tolist()
     return [E1, E2, E3, E4, E5, Ebase]
 
 
@@ -665,7 +664,6 @@ def calculate_A_and_c(step, k, contact_modifiers, perturbation_matrices, transit
     elif (phase[step][0] == 6):
         sf = perturbation_matrices[5]
 
-    # error here
     if (phase[step][1] == 1):
         wf = perturbation_matrices[6]
     elif (phase[step][1] == 2):
@@ -690,20 +688,13 @@ def calculate_A_and_c(step, k, contact_modifiers, perturbation_matrices, transit
     return [A, c]
 
 
-# Vaccination rate
-def sigma_calculation(step, boolVaccination, coverage):
-    if (boolVaccination[step] == 1):
-        return coverage[step]/100*(1/12)/(1-coverage[step]/100)
-    return 0
-
-
 def get_coverage(path):
-    _coverage = pd.read_excel(path, sheet_name='coverage', skiprows=16, usecols=(1,1)).fillna(0).values.tolist()
+    _coverage = pd.read_excel(path, sheet_name='coverage', skiprows=None, usecols=(1,1), skipfooter = 6).fillna(0).values.tolist()
     return [x for y in _coverage for x in y]
 
 
 def vaccination_active(path):
-    _vaccineFull = pd.read_excel(path, sheet_name='vaccinateFull', skiprows=0, usecols=(1,1)).values.tolist()
+    _vaccineFull = pd.read_excel(path, sheet_name='vaccinateFull', skiprows=None, usecols=(1,1)).values.tolist()
     return [x for y in _vaccineFull for x in y]
 
 
@@ -713,21 +704,22 @@ def k_value(t, path=get_repo_path() + '/data/jane_model_data/kval.txt'):
     """
     k = get_text_file_data(path)
     kval = [x for y in k for x in y]
-    time = [0, 71, 73, 76, 153, 173, 185, 201, 239, 244, 290, 295, 303, 305, 349, 353, 368, 369, 370, 377, 381, 384, 391, 398, 402, 
-                     404, 405, 409, 412, 418, 419, 425, 426, 431, 433, 440, 447, 454, 459, 461, 465, 468, 472 , 475, 481, 482, 488, 
-                     489, 494, 496, 497, 501, 503, 510, 517, 524, 531, 552, 592, 609, 731]
+    time = [0, 71, 73, 76, 153, 173, 185, 201, 239, 244, 290, 295, 303, 305, 349, 353, 368, 369, 370, 377, 381, 384, 
+                          391, 398, 402, 404, 405, 409, 412, 418, 419, 425, 426, 431, 433, 440, 447, 454, 459, 461, 465, 468, 472, 
+                          475, 481, 482, 488, 489, 494, 496, 497, 501, 503, 510, 517, 524, 531, 552, 592, 609, 731]
     for i in range(0, len(time)):
         if t == time[i]:
-            return kval[i]
-        elif t > time[i] and t < time[i+1]:
             return kval[i]
 
 
 def nu_value(t, path=get_repo_path() + '/data/jane_model_data/ScenarioPlanFranceOne.xlsx'):
+    """
+    Variants of Concern infections
+    """
     vocInfect = 0.5
-    time = [0, 71, 73, 76, 153, 173, 185, 201, 239, 244, 290, 295, 303, 305, 349, 353, 368, 369, 370, 377, 381, 384, 391, 398, 402, 
-                     404, 405, 409, 412, 418, 419, 425, 426, 431, 433, 440, 447, 454, 459, 461, 465, 468, 472 , 475, 481, 482, 488, 
-                     489, 494, 496, 497, 501, 503, 510, 517, 524, 531, 552, 592, 609, 731]
+    time = [0, 71, 73, 76, 153, 173, 185, 201, 239, 244, 290, 295, 303, 305, 349, 353, 368, 369, 370, 377, 381, 384, 
+                          391, 398, 402, 404, 405, 409, 412, 418, 419, 425, 426, 431, 433, 440, 447, 454, 459, 461, 465, 468, 472, 
+                          475, 481, 482, 488, 489, 494, 496, 497, 501, 503, 510, 517, 524, 531, 552, 592, 609, 731]
     _vocpercent = pd.read_excel(path, sheet_name='VOC France', skiprows=0, usecols=(3,3)).values.tolist()
     vocpercent = [x for y in _vocpercent for x in y if str(x) != 'nan']
     for i in range(0, len(time)):
@@ -744,7 +736,7 @@ def get_target_population(age_group, path = get_repo_path() + '/data/jane_model_
         for j in range(0,len(_data)):
             for x in range(0,len(_data[j])):
                 if _data[j][x] == val[i]:
-                    _data[j][x] = age_group[i]
+                    _data[j][x] = 1
     return np.array(_data)
 
 

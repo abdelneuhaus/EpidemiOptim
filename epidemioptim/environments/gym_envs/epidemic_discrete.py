@@ -410,18 +410,18 @@ if __name__ == '__main__':
     stats = env.unwrapped.get_data()
 
     # plot model states
-    plot_stats(t=stats['history']['env_timesteps'],
-               states=np.array(stats['history']['model_states']).transpose(),
-               labels=stats['model_states_labels'],
-               lockdown=np.array(stats['history']['lockdown']),
-               icu_capacity=stats['icu_capacity'],
-               time_jump=stats['time_jump'])
-    plot_stats(t=stats['history']['env_timesteps'][1:],
-               states=stats['stats_run']['to_plot'],
-               labels=stats['stats_run']['labels'],
-               legends=stats['stats_run']['legends'],
-               title=stats['title'],
-               lockdown=np.array(stats['history']['lockdown']),
-               time_jump=stats['time_jump'],
-               show=True
-               )
+    # plot_stats(t=stats['history']['env_timesteps'],
+    #            states=np.array(stats['history']['model_states']).transpose(),
+    #            labels=stats['model_states_labels'],
+    #            lockdown=np.array(stats['history']['lockdown']),
+    #            icu_capacity=stats['icu_capacity'],
+    #            time_jump=stats['time_jump'])
+    # plot_stats(t=stats['history']['env_timesteps'][1:],
+    #            states=stats['stats_run']['to_plot'],
+    #            labels=stats['stats_run']['labels'],
+    #            legends=stats['stats_run']['legends'],
+    #            title=stats['title'],
+    #            lockdown=np.array(stats['history']['lockdown']),
+    #            time_jump=stats['time_jump'],
+    #            show=True
+    #            )
