@@ -690,12 +690,12 @@ def calculate_A_and_c(step, k, contact_modifiers, perturbation_matrices, transit
 
 
 def get_coverage(path):
-    _coverage = pd.read_excel(path, sheet_name='coverage', skiprows=0, usecols=(1,1), skipfooter = 6).fillna(0).values.tolist()
+    _coverage = pd.read_excel(path, sheet_name='coverage', skiprows=17, usecols=(1,1), skipfooter = 6).values.tolist()
     return [x for y in _coverage for x in y]
 
 
 def vaccination_active(path):
-    _vaccineFull = pd.read_excel(path, sheet_name='vaccinateFull', skiprows=0, usecols=(1,1)).values.tolist()
+    _vaccineFull = pd.read_excel(path, sheet_name='vaccinateFull', usecols=(1,1)).values.tolist()
     return [x for y in _vaccineFull for x in y]
 
 
@@ -721,7 +721,7 @@ def nu_value(t, path=get_repo_path() + '/data/jane_model_data/ScenarioPlanFrance
     time = [0, 71, 73, 76, 153, 173, 185, 201, 239, 244, 290, 295, 303, 305, 349, 353, 369, 370, 377, 381, 384, 391, 
             398, 402, 404, 405, 409, 412, 418, 419, 425, 426, 431, 433, 440, 447, 454, 459, 461, 465, 468, 472, 475, 
             481, 482, 488, 489, 494, 496, 497, 501, 503, 510, 517, 524, 531, 552, 578, 609, 639, 731]
-    _vocpercent = pd.read_excel(path, sheet_name='VOC France', skiprows=0, usecols=(1,1),  skipfooter = 3).fillna(0).values.tolist()
+    _vocpercent = pd.read_excel(path, sheet_name='VOC France', usecols=(3,3),  skipfooter = 3).values.tolist()
     vocpercent = [x for y in _vocpercent for x in y if str(x) != 'nan']
     for i in range(0, len(time)):
         if int(t) == time[i]:
@@ -731,7 +731,7 @@ def nu_value(t, path=get_repo_path() + '/data/jane_model_data/ScenarioPlanFrance
 
 
 def get_target_population(path = get_repo_path() + '/data/jane_model_data/ScenarioPlanFranceOne.xlsx'):
-    _data = pd.read_excel(path, sheet_name='targetPopulation', skiprows=0, usecols=(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16)).fillna(0).values.tolist()
+    _data = pd.read_excel(path, sheet_name='targetPopulation', skiprows=17, usecols=(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16)).fillna(0).values.tolist()
     val = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
     for i in range(len(val)):
         for j in range(0,len(_data)):
@@ -742,7 +742,7 @@ def get_target_population(path = get_repo_path() + '/data/jane_model_data/Scenar
 
 
 def get_MATLAB_res(path = get_repo_path() + '/data/jane_model_data/ScenarioPlanFranceOne.xlsx'):
-    _data = pd.read_excel(path, sheet_name='I4 365', skiprows=None, usecols=(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16)).values.tolist()
+    _data = pd.read_excel(path, sheet_name='I4 sim', skiprows=None, usecols=(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16)).values.tolist()
     return np.array(_data).transpose()
 
 

@@ -101,17 +101,17 @@ def vaccination_model(y: tuple,
 
     # Exposed compartments
     # To I2
-    dE21dt = p1[0]*alpha[0]*A[0]*S1*infect + p2[0]*alpha[1]*A[1]*S2*infect + p2[0]*epsilon*alpha[1]*A[1]*V11*infect - kappa[1]*E21
+    dE21dt = p1[0]*alpha[0]*A[0]*S1*infect + p2[0]*alpha[1]*A[1]*S2*infect + 0.3*p2[0]*epsilon*alpha[1]*A[1]*V11*infect - kappa[1]*E21
     dE22dt = kappa[1]*E21 - kappa[2]*E22
     dE23dt = kappa[2]*E22 - kappa[3]*E23
 
     # To I3
-    dE31dt = p1[1]*alpha[0]*A[0]*S1*infect + p2[1]*alpha[1]*A[1]*S2*infect + p3[1]*alpha[2]*A[2]*S3*infect + p2[1]*epsilon*alpha[1]*A[1]*V11*infect + p3[1]*epsilon*alpha[2]*A[2]*V21*infect - kappa[1]*E31
+    dE31dt = p1[1]*alpha[0]*A[0]*S1*infect + p2[1]*alpha[1]*A[1]*S2*infect + p3[1]*alpha[2]*A[2]*S3*infect + 0.3*p3[1]*epsilon*alpha[1]*A[1]*V11*infect + 0.3*p3[1]*epsilon*alpha[2]*A[2]*V21*infect - kappa[1]*E31
     dE32dt = kappa[1]*E31 - kappa[2]*E32
     dE33dt = kappa[2]*E32 - kappa[3]*E33
 
     # To I4
-    dE41dt = p1[2]*alpha[0]*A[0]*S1*infect + p2[2]*alpha[1]*A[1]*S2*infect + p3[2]*alpha[2]*A[2]*S3*infect + p2[2]*epsilon*alpha[1]*A[1]*V11*infect + p3[2]*epsilon*alpha[2]*A[2]*V21*infect - kappa[1]*E41
+    dE41dt = p1[2]*alpha[0]*A[0]*S1*infect + p2[2]*alpha[1]*A[1]*S2*infect + p3[2]*alpha[2]*A[2]*S3*infect + (0.3*p2[2]+0.7*p3[2])*epsilon*alpha[1]*A[1]*V11*infect + 0.3*p2[2]*epsilon*alpha[2]*A[2]*V21*infect - kappa[1]*E41
     dE42dt = kappa[1]*E41 - kappa[2]*E42
     dE43dt = kappa[2]*E42 - kappa[3]*E43 
 
@@ -143,7 +143,7 @@ def vaccination_model(y: tuple,
     dI3dt = kappa[3]*E33 - delta[2]*I3 - gamma[2]*I3
     dI4dt = kappa[3]*E43 - delta[3]*I4 - gamma[3]*I4 
 
-    dydt = np.array((dS1dt, dS2dt, dS3dt, dS4dt, dE21dt, dE22dt, dE23dt, dE31dt, dE32dt, dE33dt, dE41dt, dE42dt, dE43dt, dV11dt, dV12dt, dV31dt, dV41dt, dV21dt, dV22dt, dV32dt, dV42dt, dI2dt, dI3dt, dI4dt, dCV11dt, dCV21dt, dCV31dt, dCV41dt, dCV12dt, dCV22dt, dCV32dt, dCV42dt))
+    dydt = np.array((dS1dt, dS2dt, dS3dt, dS4dt, dE21dt, dE22dt, dE23dt, dE31dt, dE32dt, dE33dt, dE41dt, dE42dt, dE43dt, dV11dt, dV21dt, dV31dt, dV41dt, dV12dt, dV22dt, dV32dt, dV42dt, dI2dt, dI3dt, dI4dt, dCV11dt, dCV21dt, dCV31dt, dCV41dt, dCV12dt, dCV22dt, dCV32dt, dCV42dt))
     return dydt.T
 
 
@@ -183,9 +183,10 @@ class HeffernanOdeModel(BaseModel):
         self.mitigation_windows = mitigation_time(self.step_list)
         self.number_doses = [1679218,3008288,6026744,12000000,12000000,12000000,12000000,12000000,12000000,0,0]
         self.coverage_threshold = [0, 0, 0, 0, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8]
-        self.vacStep = 0
         self.dCV1 = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         self.dCV2 = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        self.vacStep = 0
+        
         # Tracking variables
         self.step = 0
         self.t = 0
@@ -223,7 +224,7 @@ class HeffernanOdeModel(BaseModel):
                                                          beta=np.array(duplicate_data([0.04, 0.08, 0.008], 16)),
                                                          c=calculate_A_and_c(0, 1, self.contact_modifiers, self.perturbations_matrices, self.transition_matrices)[1],
                                                          delta=np.array(duplicate_data([0, 0, 0, 0.0001], 16)).T,
-                                                         epsilon=0.559,
+                                                         epsilon=1-0.559,
                                                          gamma=np.array(duplicate_data([0, 0.2, 0.1, 1/15], 16)).T,
                                                          kappa=np.array(duplicate_data([0, 1/1.5, 1/1.5, 1/1.5], 16)).T,
                                                          nu=None,
@@ -235,7 +236,6 @@ class HeffernanOdeModel(BaseModel):
                                                          sigma=np.array([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]), 
                                                          sigma2=np.array([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0])
                                                          )
-
             self._all_initial_state_distribs[i] = dict(S20=DiracDist(params=0, stochastic=self.stochastic),
                                                        S30=DiracDist(params=0, stochastic=self.stochastic),
                                                        S40=DiracDist(params=0, stochastic=self.stochastic),
@@ -369,7 +369,7 @@ class HeffernanOdeModel(BaseModel):
             else:
                 _deltaCoverage[i] = maxcoverage[i-1]
         for i in range(len(_deltaCoverage)):
-            if _deltaCoverage[i] == 0 and i>16:
+            if _deltaCoverage[i] == 0:
                 _deltaCoverage[i] = 10e-6 
         _deltaCoverage[-1] = _deltaCoverage[-2]
         return _deltaCoverage
@@ -378,30 +378,28 @@ class HeffernanOdeModel(BaseModel):
     def compute_sigma(self):
         mwl = self.mitigation_windows[self.step]
         lowVP = 1
-        pi = lowVP*(self.vaccination_coverage[self.step]/100)
+        pi = lowVP*(self.vaccination_coverage[self.vacStep]/100)
         classes = ['S1', 'S2', 'S3', 'S4']
-        popGrp = ['S1', 'S2', 'S3', 'S4', 'E21', 'E22', 'E23', 'E31', 'E32', 'E33', 'E41', 'E42', 'E43',
-                                                 'V11', 'V21', 'V31', 'V41', 'V12', 'V22', 'V32', 'V42', 'I2', 'I3', 'I4']
-        grp = []
-        sigma = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-        wcv = 0
-        Ntot = 0
+        popGrp = ['S1', 'S2', 'S3', 'S4', 'E21', 'E22', 'E23', 'E31', 'E32', 'E33', 'E41', 'E42', 
+                  'E43', 'V11', 'V21', 'V31', 'V41', 'V12', 'V22', 'V32', 'V42', 'I2', 'I3', 'I4']
+        sigma = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        wcv, Ntot = 0, 0
         for n in range(16):
             Ntot += sum([self.current_state[self._age_groups[n]]['{}'.format(s)] for s in popGrp])
-            if self.whovaccinated[self.step][n] == 1:
+            if self.whovaccinated[self.vacStep+1][n] == 1:
                 wcv += sum([self.current_state[self._age_groups[n]]['{}'.format(s)] for s in classes])
-                grp.append(n)
         g = (pi*Ntot/wcv)
         if g>1:
             g=1
         for k in range(16):
-            sigma[k] = 1/mwl*(-math.log(1-g)) if k in grp else 0
+            if self.whovaccinated[self.vacStep+1][k] == 1:
+                sigma[k] = 1/mwl*(-math.log(1-g))
             if sigma[k] < 0:
                 sigma[k] = 0
         for f in range(16):
-            if self.dCV1[f]/self._pop_size[f]*0.8944 >= self.coverage_threshold[f]:
+            size = sum([self.current_state[self._age_groups[f]]['{}'.format(s)] for s in popGrp])
+            if self.dCV1[f]/size >= self.coverage_threshold[f]/0.8944:
                 sigma[f] = 0
-        #print(self.t, sigma)
         return sigma
             
 
@@ -428,7 +426,6 @@ class HeffernanOdeModel(BaseModel):
         """
         if current_state is None:
             current_state = np.array(self._get_current_state())
-        print(self.t, self.dCV1[15])
         for f in range(16):
             self.dCV1[f] = sum([self.current_state[self._age_groups[f]]['{}'.format(s)] for s in ['CV11', 'CV21', 'CV31', 'CV41']])
             self.dCV2[f] = sum([self.current_state[self._age_groups[f]]['{}'.format(s)] for s in ['CV12', 'CV22', 'CV32', 'CV42']])
@@ -436,11 +433,13 @@ class HeffernanOdeModel(BaseModel):
             self.k = k_value(self.t)
             A_c = calculate_A_and_c(self.step, self.k, self.contact_modifiers, self.perturbations_matrices, self.transition_matrices)
             self.current_internal_params['A'], self.current_internal_params['c'] = np.array(A_c[0]), A_c[1]
-            sigma = self.compute_sigma()
-            self.current_internal_params['sigma'] = np.array(sigma)
-            self.current_internal_params['sigma2'] = np.array(duplicate_data(1/28, 16))
-            self.step += 1
             self.current_internal_params['nu'] = nu_value(self.t)
+            if self.t >= 370:
+                sigma = self.compute_sigma()
+                self.current_internal_params['sigma'] = np.array(sigma)
+                self.current_internal_params['sigma2'] = np.array(duplicate_data(1/28, 16))
+                self.vacStep += 1
+            self.step += 1
 
         # Use the odeint library to run the ODE model
         z = odeintw(self.internal_model, current_state, np.linspace(0, n, n + 1), args=(self._get_model_params()))
@@ -455,7 +454,7 @@ class HeffernanOdeModel(BaseModel):
 
 
 # UTILS
-def plot_preds(t, states):
+def plot_preds(t, states, title):
     plt.plot(t, states[0], color='b', label='0-4')
     plt.plot(t, states[1], color='r', label='5-9')
     plt.plot(t, states[2], color='lime', label='10-14')
@@ -470,20 +469,21 @@ def plot_preds(t, states):
     plt.plot(t, states[11], color='plum', label='55-59')
     plt.plot(t, states[12], color='palegreen', label='60-64')
     plt.plot(t, states[13], color='mediumorchid', label='65-69')
-    plt.plot(t, states[14], color='orangered', label='74-74')
+    plt.plot(t, states[14], color='orangered', label='70-74')
     plt.plot(t, states[15], color='olive', label='75+')
     plt.legend()
+    plt.title(title)
     plt.show()
 
 # put into utils or delete
-def plot_comparison(t, states):
+def plot_comparison(t, states, labels):
     n_plots = len(states)
     x = int(np.sqrt(n_plots))
     y = int(n_plots / x - 1e-4) + 1
     fig, axs = plt.subplots(x, y, figsize=(12, 7))
     axs = axs.ravel()
     for i in range(n_plots):
-        axs[i].plot(t[i], states[i], linewidth=5)
+        axs[i].plot(t[i], states[i], linewidth=5, label=labels[i])
     plt.show()
     return axs, fig
 
@@ -491,6 +491,7 @@ def plot_comparison(t, states):
 if __name__ == '__main__':
     # Get model
     model = HeffernanOdeModel(age_group='0-4', stochastic=False)
+    labels = ['0-4', '5-9', '10-14', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44', '45-49', '50-54', '55-59', '60-64', '65-69',  '70-74', '75+']
 
     # Run simulation
     simulation_horizon = 731
@@ -501,9 +502,9 @@ if __name__ == '__main__':
     
     # Plot
     time = np.arange(simulation_horizon)
-    labels = ['0-4', '5-9', '10-14', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44', '45-49', '50-54', '55-59', '60-64', '65-69',  '70-74', '75+']
     # plot_preds(t=time,
     #            states=np.array(model_states).transpose()[13]+np.array(model_states).transpose()[14]+np.array(model_states).transpose()[15]+np.array(model_states).transpose()[16])
-    plot_preds(t=time,states=np.array(model_states).transpose()[23])
-    # plot_comparison(get_MATLAB_res(), np.array(model_states).transpose()[21])
+    plot_preds(t=time,states=np.array(model_states).transpose()[23], title="Données Python")
+    #print(np.array(model_states).transpose()[13][14])
+    #plot_comparison(get_MATLAB_res(), np.array(model_states).transpose()[23], labels)
 
