@@ -446,29 +446,6 @@ class HeffernanOdeModel(BaseModel):
         else:
             return np.atleast_2d(z[1:])
 
-    def get_pop_vaccine_groups(self):
-            """
-            Return the total number of people in the 3 neo-groups (S compartment only)
-            """
-            a = ['0-4', '5-9', '10-14', '15-19']
-            b = ['20-24', '25-29', '30-34', '35-39', '40-44', '45-49', '50-54']
-            c = ['55-59', '60-64', '65-69',  '70-74', '75+']
-            groups = ['0-19', '20-54', '55+']
-            vaccine_groups = {}
-            for i in groups :
-                vaccine_groups[i] = {}
-            sumA, sumB, sumC = 0, 0, 0
-            for i in a:
-                sumA += (self.current_state[i]['S1'] + self.current_state[i]['S2'] + self.current_state[i]['S3'] + self.current_state[i]['S4'])
-            for i in b:
-                sumB += (self.current_state[i]['S1'] + self.current_state[i]['S2'] + self.current_state[i]['S3'] + self.current_state[i]['S4'])
-            for i in c:
-                sumC += (self.current_state[i]['S1'] + self.current_state[i]['S2'] + self.current_state[i]['S3'] + self.current_state[i]['S4'])
-            vaccine_groups['0-19']['S'] = sumA
-            vaccine_groups['20-54']['S'] = sumB
-            vaccine_groups['55+']['S'] = sumC
-            return vaccine_groups
-
 
 if __name__ == '__main__':
     # Get model
