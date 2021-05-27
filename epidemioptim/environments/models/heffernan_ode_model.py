@@ -353,8 +353,6 @@ class HeffernanOdeModel(BaseModel):
         self.current_state = dict(zip(self.internal_states_labels, current_state.T))
 
 
-
-# VACCINATION TEST NO RL
     def _compute_delta_coverage(self):
         maxcoverage = [x*100 for x in self._vaccination_coverage]
         _deltaCoverage = list(range(len(maxcoverage)))
@@ -430,9 +428,9 @@ class HeffernanOdeModel(BaseModel):
             A_c = calculate_A_and_c(self.step, self.k, self.contact_modifiers, self.perturbations_matrices, self.transition_matrices)
             self.current_internal_params['A'], self.current_internal_params['c'] = np.array(A_c[0]), A_c[1]
             self.current_internal_params['nu'] = nu_value(self.t)
-            if self.t >= 370:
-                sigma = self.compute_sigma()
-                self.current_internal_params['sigma'] = np.array(sigma)
+            if self.t > 369:
+                #sigma = self.compute_sigma()
+                #self.current_internal_params['sigma'] = np.array(sigma)
                 self.current_internal_params['sigma2'] = np.array(duplicate_data(1/28, 16))
                 self.vacStep += 1
             self.step += 1
@@ -486,9 +484,5 @@ if __name__ == '__main__':
     
     # Plot
     time = np.arange(simulation_horizon)
-    # plot_preds(t=time,
-    #            states=np.array(model_states).transpose()[13]+np.array(model_states).transpose()[14]+np.array(model_states).transpose()[15]+np.array(model_states).transpose()[16])
-    plot_preds(t=time,states=np.array(model_states).transpose()[23], title="Données Python")
-    #print(np.array(model_states).transpose()[13][14])
-    #plot_comparison(get_MATLAB_res(), np.array(model_states).transpose()[23], labels)
+    plot_preds(t=time,states=np.array(model_states).transpose()[23], title="Vaccination sans groupe")
 

@@ -770,6 +770,8 @@ def plot_preds(t, states, title):
     plt.plot(t, states[13], color='mediumorchid', label='65-69')
     plt.plot(t, states[14], color='orangered', label='70-74')
     plt.plot(t, states[15], color='olive', label='75+')
+    plt.axvline(x=370, label='Start of vaccination', color='red', linewidth=1, linestyle='--')
+    plt.axvline(x=631, label='End of 1st dose', linewidth=1, linestyle='--')
     plt.legend()
     plt.title(title)
     plt.show()
