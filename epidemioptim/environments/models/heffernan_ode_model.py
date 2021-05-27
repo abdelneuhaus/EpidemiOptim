@@ -1,5 +1,4 @@
 import numpy as np
-from numpy.core.numerictypes import maximum_sctype
 from odeintw import odeintw
 
 from epidemioptim.environments.models.base_model import BaseModel
@@ -150,7 +149,6 @@ def vaccination_model(y: tuple,
 
 class HeffernanOdeModel(BaseModel):
     def __init__(self,
-                age_group = '0-4',
                 stochastic=False,
                 range_delay=None
                 ):
@@ -191,9 +189,7 @@ class HeffernanOdeModel(BaseModel):
         self.step = 0
         self.t = 0
         self.k = 1
-        assert age_group in self._age_groups, 'age group should be one of ' + str(self._age_groups)
 
-        self.age_group = age_group
         self.stochastic = stochastic
         self._all_internal_params_distribs = dict()
         self._all_initial_state_distribs = dict()
@@ -452,45 +448,33 @@ class HeffernanOdeModel(BaseModel):
         else:
             return np.atleast_2d(z[1:])
 
-
-# UTILS
-def plot_preds(t, states, title):
-    plt.plot(t, states[0], color='b', label='0-4')
-    plt.plot(t, states[1], color='r', label='5-9')
-    plt.plot(t, states[2], color='lime', label='10-14')
-    plt.plot(t, states[3], color='fuchsia', label='15-19')
-    plt.plot(t, states[4], color='gold', label='20-24')
-    plt.plot(t, states[5], color='dodgerblue', label='25-29')
-    plt.plot(t, states[6], color='forestgreen', label='30-34')
-    plt.plot(t, states[7], color='peru', label='35-39')
-    plt.plot(t, states[8], color='indigo', label='40-44')
-    plt.plot(t, states[9], color='cyan', label='45-49')
-    plt.plot(t, states[10], color='teal', label='50-54')
-    plt.plot(t, states[11], color='plum', label='55-59')
-    plt.plot(t, states[12], color='palegreen', label='60-64')
-    plt.plot(t, states[13], color='mediumorchid', label='65-69')
-    plt.plot(t, states[14], color='orangered', label='70-74')
-    plt.plot(t, states[15], color='olive', label='75+')
-    plt.legend()
-    plt.title(title)
-    plt.show()
-
-# put into utils or delete
-def plot_comparison(t, states, labels):
-    n_plots = len(states)
-    x = int(np.sqrt(n_plots))
-    y = int(n_plots / x - 1e-4) + 1
-    fig, axs = plt.subplots(x, y, figsize=(12, 7))
-    axs = axs.ravel()
-    for i in range(n_plots):
-        axs[i].plot(t[i], states[i], linewidth=5, label=labels[i])
-    plt.show()
-    return axs, fig
+    def get_pop_vaccine_groups(self):
+            """
+            Return the total number of people in the 3 neo-groups (S compartment only)
+            """
+            a = ['0-4', '5-9', '10-14', '15-19']
+            b = ['20-24', '25-29', '30-34', '35-39', '40-44', '45-49', '50-54']
+            c = ['55-59', '60-64', '65-69',  '70-74', '75+']
+            groups = ['0-19', '20-54', '55+']
+            vaccine_groups = {}
+            for i in groups :
+                vaccine_groups[i] = {}
+            sumA, sumB, sumC = 0, 0, 0
+            for i in a:
+                sumA += (self.current_state[i]['S1'] + self.current_state[i]['S2'] + self.current_state[i]['S3'] + self.current_state[i]['S4'])
+            for i in b:
+                sumB += (self.current_state[i]['S1'] + self.current_state[i]['S2'] + self.current_state[i]['S3'] + self.current_state[i]['S4'])
+            for i in c:
+                sumC += (self.current_state[i]['S1'] + self.current_state[i]['S2'] + self.current_state[i]['S3'] + self.current_state[i]['S4'])
+            vaccine_groups['0-19']['S'] = sumA
+            vaccine_groups['20-54']['S'] = sumB
+            vaccine_groups['55+']['S'] = sumC
+            return vaccine_groups
 
 
 if __name__ == '__main__':
     # Get model
-    model = HeffernanOdeModel(age_group='0-4', stochastic=False)
+    model = HeffernanOdeModel(stochastic=False)
     labels = ['0-4', '5-9', '10-14', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44', '45-49', '50-54', '55-59', '60-64', '65-69',  '70-74', '75+']
 
     # Run simulation

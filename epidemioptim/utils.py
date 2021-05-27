@@ -751,3 +751,36 @@ def mitigation_time(step_list):
     for i in range(len(step_list)-1):
         breaks.append(step_list[i+1]-step_list[i])
     return breaks
+
+
+def plot_preds(t, states, title):
+    plt.plot(t, states[0], color='b', label='0-4')
+    plt.plot(t, states[1], color='r', label='5-9')
+    plt.plot(t, states[2], color='lime', label='10-14')
+    plt.plot(t, states[3], color='fuchsia', label='15-19')
+    plt.plot(t, states[4], color='gold', label='20-24')
+    plt.plot(t, states[5], color='dodgerblue', label='25-29')
+    plt.plot(t, states[6], color='forestgreen', label='30-34')
+    plt.plot(t, states[7], color='peru', label='35-39')
+    plt.plot(t, states[8], color='indigo', label='40-44')
+    plt.plot(t, states[9], color='cyan', label='45-49')
+    plt.plot(t, states[10], color='teal', label='50-54')
+    plt.plot(t, states[11], color='plum', label='55-59')
+    plt.plot(t, states[12], color='palegreen', label='60-64')
+    plt.plot(t, states[13], color='mediumorchid', label='65-69')
+    plt.plot(t, states[14], color='orangered', label='70-74')
+    plt.plot(t, states[15], color='olive', label='75+')
+    plt.legend()
+    plt.title(title)
+    plt.show()
+
+def plot_comparison(t, states, labels):
+    n_plots = len(states)
+    x = int(np.sqrt(n_plots))
+    y = int(n_plots / x - 1e-4) + 1
+    fig, axs = plt.subplots(x, y, figsize=(12, 7))
+    axs = axs.ravel()
+    for i in range(n_plots):
+        axs[i].plot(t[i], states[i], linewidth=5, label=labels[i])
+    plt.show()
+    return axs, fig
