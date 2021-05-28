@@ -180,7 +180,7 @@ class EpidemicVaccination(BaseEnv):
             size = sum([self.model.current_state[self.model._age_groups[f]]['{}'.format(s)] for s in popGrp])
             if self.model.dCV1[f]/size >= self.model.coverage_threshold[f]/0.8944:
                 sigma[f] = 0
-        print(self.model.t, (sum(self.model.dCV1))/Ntot*100)
+        # print(self.model.t, (sum(self.model.dCV1))/Ntot*100)
         return sigma
 
 
@@ -190,35 +190,33 @@ class EpidemicVaccination(BaseEnv):
         pi = lowVP*(self.model.vaccination_coverage[self.model.vacStep]/100)
         popGrp = ['S1', 'S2', 'S3', 'S4', 'E21', 'E22', 'E23', 'E31', 'E32', 'E33', 'E41', 'E42', 
                   'E43', 'V11', 'V21', 'V31', 'V41', 'V12', 'V22', 'V32', 'V42', 'I2', 'I3', 'I4']
-        sigma = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        sigma = [0, 0, 0]
         wcv, Ntot = 0, 0
         for n in range(16):
             Ntot += sum([self.model.current_state[self.model._age_groups[n]]['{}'.format(s)] for s in popGrp])
         for n in range(3):
-            if self.vaccination_current_politic[self.model.vacStep][n] == 1:
+            if action[n] == 1:
                 wcv += self.vaccine_groups[n]
         g = (pi*Ntot/wcv)
         if g>1:
-            g=1
+            g=0.9
         sig = 1/mwl*(-math.log(1-g))
+        #print(sig)
         for k in range(3):
-            if self.vaccination_current_politic[self.model.vacStep][k] == 1:
+            if action[k] == 1:
                 if k == 0:
-                    for i in [0, 1, 2, 3]:
-                        sigma[i] = sig
+                    sigma[k] = sig
                 elif k == 1:
-                    for i in [4, 5, 6, 7, 8, 9, 10]:
-                        sigma[i] = sig
+                    sigma[k] = sig
                 elif k == 2:
-                    for i in [11, 12, 13, 14, 15]:
-                        sigma[i] = sig
-        for k in range(16):
+                    sigma[k] = sig
             if sigma[k] < 0:
                 sigma[k] = 0
-        for f in range(16):
+        for f in range(3):
             size = sum([self.model.current_state[self.model._age_groups[f]]['{}'.format(s)] for s in popGrp])
             if self.model.dCV1[f]/size >= self.model.coverage_threshold[f]/0.8944:
                 sigma[f] = 0
+        print(sigma)
         return sigma
 
     def _update_previous_env_state(self):
@@ -327,7 +325,7 @@ class EpidemicVaccination(BaseEnv):
         # Translate actions
         self.previous_politic = self.vaccination_politic
         
-        for i in range(len(action)):
+        for i in range(3):
             if action[i] == 0:
                 # no vaccination
                 self.jump_of = min(self.time_resolution, self.simulation_horizon - self.t)
@@ -347,14 +345,15 @@ class EpidemicVaccination(BaseEnv):
                     self.count_since_last_politic = 0
 
         # Modify model parameters based on state
-        self.sigma = self._compute_sigma()
+        sigma = self.compute_sigma_with_action(action)
         for i in range(16):
             if i in [0,1,2,3]:
-                self.model.current_internal_params['sigma'][i] = self.sigma[0][0]
+                self.model.current_internal_params['sigma'][i] = sigma[0]
             elif i in [4,5,6,7,8,9,10]:
-                self.model.current_internal_params['sigma'][i] = self.sigma[0][1]
+                self.model.current_internal_params['sigma'][i] = sigma[1]
             else:
-                self.model.current_internal_params['sigma'][i] = self.sigma[0][2]
+                self.model.current_internal_params['sigma'][i] = sigma[2]
+        #print(self.model.current_internal_params['sigma'])
 
 
     def step(self, action):
@@ -384,7 +383,8 @@ class EpidemicVaccination(BaseEnv):
         # Run model for jump_of steps
         model_state = [self.model_state]
         model_states = []
-        for sigma in self.sigma:
+        for i in range(30):
+            #print(self.model.t)
             model_state = self.model.run_n_steps(model_state[-1], 1)
             model_states += model_state.tolist()
         self.model_state = model_state[-1]  # last internal state is the new current one
@@ -424,7 +424,6 @@ class EpidemicVaccination(BaseEnv):
             done = 1
         else:
             done = 0
-
         return self._normalize_env_state(self.env_state), costs, done
 
     # Utils
@@ -475,17 +474,28 @@ if __name__ == '__main__':
                     model=model,
                     simulation_horizon=simulation_horizon)
     env.reset()
-    bef_model_states = []
     model.current_state, model.current_internal_params, model_states = env.initialize_model_for_vaccine()
-    for i in range(simulation_horizon):
-        sigma = env.compute_sigma_no_action()
-        model_state = model.run_n_steps()
-        model.current_internal_params['sigma'] = np.array(sigma)
-        model_states += model_state.tolist()
-    
+    # for i in range(simulation_horizon):
+    #     sigma = env.compute_sigma_no_action()
+    #     model_state = model.run_n_steps()
+    #     model.current_internal_params['sigma'] = np.array(sigma)
+    #     model_states += model_state.tolist()
+
+    # #Actions
+    actions = random_actions()#([0,0,1], [0,0,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1])
+    print("list of actions", actions)
+    t = 0
+    r = 0
+    done = False
+    while not done:
+        out = env.step(actions[t])
+        t += 1
+        r += out[1]
+        done = out[2]
+    stats = env.unwrapped.get_data()
     # Plot
-    time = np.arange(simulation_horizon+371)
-    plot_preds(t=time,states=np.array(model_states).transpose()[23], title="Vaccination sur 3 groupes (0-19, 20-54, 55+) selon la politique réelle")
+    time = np.arange(simulation_horizon+1)
+    plot_preds(t=time,states=np.array(stats['history']['model_states']).transpose()[23], title="Vaccination sur 3 groupes (0-19, 20-54, 55+) selon la politique réelle")
 
 
     # # To delete if no GDP recess cost function
@@ -493,17 +503,7 @@ if __name__ == '__main__':
     # N_country = np.sum(list(model.pop_size.values()))
     # ratio_death_to_R = 0.0001
 
-    # #Actions
-    # actions = ([0,0,1], [0,0,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1])
-    # t = 0
-    # r = 0
-    # done = False
-    # while not done:
-    #     out = env.step(actions[1])
-    #     t += 1
-    #     r += out[1]
-    #     done = out[2]
-    # stats = env.unwrapped.get_data()
+   
 
     # plot model states
     # plot_stats(t=stats['history']['env_timesteps'],

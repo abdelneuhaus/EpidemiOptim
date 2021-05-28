@@ -786,3 +786,12 @@ def plot_comparison(t, states, labels):
         axs[i].plot(t[i], states[i], linewidth=5, label=labels[i])
     plt.show()
     return axs, fig
+
+def random_actions():
+    data = []
+    for i in range(12):
+        sub = []
+        for i in range(3):
+            sub.append(random.randint(0, 1))
+        data.append(sub)
+    return data
