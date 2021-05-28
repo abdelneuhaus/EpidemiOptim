@@ -78,8 +78,8 @@ class EpidemicVaccination(BaseEnv):
         Return the total number of people in the 3 neo-groups (S compartment only)
         """
         a = ['0-4', '5-9', '10-14', '15-19']
-        b = ['20-24', '25-29', '30-34', '35-39', '40-44', '45-49', '50-54']
-        c = ['55-59', '60-64', '65-69',  '70-74', '75+']
+        b = ['20-24', '25-29', '30-34', '35-39', '40-44', '45-49', '50-54', '55-59', '60-64']
+        c = ['65-69',  '70-74', '75+']
         classes = ['S1', 'S2', 'S3', 'S4']
         vaccine_groups = []
         sumA, sumB, sumC = 0, 0, 0
@@ -100,8 +100,8 @@ class EpidemicVaccination(BaseEnv):
         Return the total number of people in the 3 neo-groups (S compartment only)
         """
         a = ['0-4', '5-9', '10-14', '15-19']
-        b = ['20-24', '25-29', '30-34', '35-39', '40-44', '45-49', '50-54']
-        c = ['55-59', '60-64', '65-69',  '70-74', '75+']
+        b = ['20-24', '25-29', '30-34', '35-39', '40-44', '45-49', '50-54', '55-59', '60-64']
+        c = ['65-69',  '70-74', '75+']
         classes = ['S1', 'S2', 'S3', 'S4', 'E21', 'E22', 'E23', 'E31', 'E32', 'E33', 'E41', 'E42', 
                    'E43', 'V11', 'V21', 'V31', 'V41', 'V12', 'V22', 'V32', 'V42', 'I2', 'I3', 'I4']
         total_pop = []
@@ -130,10 +130,10 @@ class EpidemicVaccination(BaseEnv):
         for i in [0,1,2,3]:
             sumA += self.model.coverage_threshold[i]
         sumA /= 4
-        for i in [4,5,6,7,8,9,10]:
+        for i in [4,5,6,7,8,9,10, 11, 12]:
             sumB += self.model.coverage_threshold[i]
         sumB /= 7
-        for i in [11,12,13,14,15]:
+        for i in [13,14,15]:
             sumC += self.model.coverage_threshold[i]
         sumC /= 5
         sumA /= 0.8944
@@ -148,9 +148,9 @@ class EpidemicVaccination(BaseEnv):
         for i in [0,1,2,3]:
             sumA += self.model.dCV1[i]
         #print(self.model.dCV1)
-        for i in [4,5,6,7,8,9,10]:
+        for i in [4,5,6,7,8,9,10, 11, 12]:
             sumB += self.model.dCV1[i]
-        for i in [11,12,13,14,15]:
+        for i in [13,14,15]:
             sumC += self.model.dCV1[i]
         dcv1_groups.append(sumA)
         dcv1_groups.append(sumB)
@@ -193,11 +193,11 @@ class EpidemicVaccination(BaseEnv):
                     tmp.append(1)
                 else:
                     tmp.append(0)
-                if 1 in i[4:11]: 
+                if 1 in i[4:13]: 
                     tmp.append(1)
                 else:
                     tmp.append(0)
-                if 1 in i[11:16]:
+                if 1 in i[13:16]:
                     tmp.append(1)
                 else:
                     tmp.append(0)
@@ -229,10 +229,10 @@ class EpidemicVaccination(BaseEnv):
                     for i in [0, 1, 2, 3]:
                         sigma[i] = sig
                 elif k == 1:
-                    for i in [4, 5, 6, 7, 8, 9, 10]:
+                    for i in [4, 5, 6, 7, 8, 9, 10, 11, 12]:
                         sigma[i] = sig
                 elif k == 2:
-                    for i in [11, 12, 13, 14, 15]:
+                    for i in [13, 14, 15]:
                         sigma[i] = sig
         for k in range(16):
             if sigma[k] < 0:
@@ -300,9 +300,7 @@ class EpidemicVaccination(BaseEnv):
         # Update env state
         self.env_state_labelled = dict()
         for i in self.model._age_groups:
-            self.env_state_labelled[i] = dict(zip(self.model.internal_states_labels, [self.model.initial_state[i]['{}0'.format(s)] for s in self.model.internal_states_labels]))
-            
-        #self.env_state_labelled = dict(zip(self.model.internal_states_labels, self.model_state))
+            self.env_state_labelled[i] = dict(zip(self.model.internal_states_labels, [self.model.current_state[i]['{}'.format(s)] for s in self.model.internal_states_labels]))
         self.env_state_labelled.update(previous_politic=self.previous_politic,
                                        current_vaccination_politic=self.vaccination_politic
                                        )
@@ -408,14 +406,12 @@ class EpidemicVaccination(BaseEnv):
 
         # Modify model parameters based on state
         sigma = self.compute_sigma_with_action(action)
-        #print(sigma[0], sigma[1], sigma[2])
         for j in [0, 1, 2, 3]:
             self.model.current_internal_params['sigma'][j] = sigma[0]
-        for j in [4, 5, 6, 7, 8, 9, 10]:
+        for j in [4, 5, 6, 7, 8, 9, 10, 11, 12]:
             self.model.current_internal_params['sigma'][j] = sigma[1]
-        for j in [11, 12, 13, 14, 15]:
+        for j in [13, 14, 15]:
             self.model.current_internal_params['sigma'][j] = sigma[2]
-        #print(self.model.current_internal_params['sigma'])
 
 
     def step(self, action):
@@ -446,7 +442,6 @@ class EpidemicVaccination(BaseEnv):
         model_state = [self.model_state]
         model_states = []
         for i in range(30):
-            #print(self.model.t)
             model_state = self.model.run_n_steps(model_state[-1], 1)
             model_states += model_state.tolist()
         self.model_state = model_state[-1]  # last internal state is the new current one
@@ -462,7 +457,6 @@ class EpidemicVaccination(BaseEnv):
                                                 label_to_id=self.label_to_id,
                                                 action=action,
                                                 others=dict(jump_of=self.time_resolution))
-
         self.cumulative_costs[0] += costs
         n_deaths = self.cost_function.compute_cost(previous_state=np.atleast_2d(self.previous_env_state),
                                                      state=np.atleast_2d(self.env_state),
@@ -544,8 +538,8 @@ if __name__ == '__main__':
     #     model_states += model_state.tolist()
 
     # #Actions
-    actions = ([0,0,1], [0,0,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1])
-    #print("list of actions", actions)
+    actions = random_actions()#([0,0,1], [0,0,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1])
+    #print(actions)
     t = 0
     r = 0
     done = False
@@ -556,7 +550,9 @@ if __name__ == '__main__':
         done = out[2]
     stats = env.unwrapped.get_data()
     # Plot
-    time = np.arange(simulation_horizon+1)
-    plot_preds(t=time,states=np.array(stats['history']['model_states']).transpose()[23], title="Vaccination sur 3 groupes (0-19, 20-54, 55+) selon la politique réelle")
-    #plot_preds(t=time,states=np.array(stats['history']['costs']), title="Cost function")
-    print(np.array(stats['history']['deaths']))
+    time = np.arange(simulation_horizon-1)
+    #plot_preds(t=time,states=np.array(stats['history']['model_states']).transpose()[23], title="Vaccination sur 3 groupes (0-19, 20-54, 55+) selon la politique réelle")
+    plt.plot(np.arange(simulation_horizon),np.array(stats['history']['costs']))
+    plt.title("Non-cumulative cost function (number of death each month)")
+    plt.show()
+    #print(np.array(stats['history']['deaths']))

@@ -53,12 +53,16 @@ class DeathTollVaccine(BaseCostFunction):
 
         """
         # compute new deaths
+        popGrp = ['S1', 'S2', 'S3', 'S4', 'E21', 'E22', 'E23', 'E31', 'E32', 'E33', 'E41', 'E42', 
+                  'E43', 'V11', 'V21', 'V31', 'V41', 'V12', 'V22', 'V32', 'V42', 'I2', 'I3', 'I4']
         sum_previous, sum_actual = 0.0, 0.0
         for i in range(16):
-            for k in state[0][i].keys():
+            for k in popGrp:
                 sum_previous += previous_state[0][i][k]
                 sum_actual += state[0][i][k]
-        new_deaths = sum_actual - sum_previous
+            #print(k)
+        new_deaths = sum_previous - sum_actual
+        #print(new_deaths)
         return new_deaths
 
     def compute_cumulative_cost(self, previous_state, state, label_to_id, action, others={}):
@@ -83,5 +87,5 @@ class DeathTollVaccine(BaseCostFunction):
             Cumulative costs for each state.
         """
         cumulative_cost = state[:, label_to_id['cumulative_cost_{}'.format(self.id_cost)]]
-
+        print(cumulative_cost)
         return cumulative_cost
