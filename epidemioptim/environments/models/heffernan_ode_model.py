@@ -229,9 +229,10 @@ class HeffernanOdeModel(BaseModel):
                                                          p2=np.array(self.p2).T,
                                                          p3=np.array(self.p3).T,
                                                          rho=0.8944,
-                                                         sigma=np.array([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]), 
-                                                         sigma2=np.array([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0])
+                                                         sigma=np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]), 
+                                                         sigma2=np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]) 
                                                          )
+
             self._all_initial_state_distribs[i] = dict(S20=DiracDist(params=0, stochastic=self.stochastic),
                                                        S30=DiracDist(params=0, stochastic=self.stochastic),
                                                        S40=DiracDist(params=0, stochastic=self.stochastic),

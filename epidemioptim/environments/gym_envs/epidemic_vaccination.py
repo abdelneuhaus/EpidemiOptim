@@ -67,20 +67,19 @@ class EpidemicVaccination(BaseEnv):
         # Vaccination parameters
         self.sigma = []
         self.vacStep = 0
-        self.vaccine_groups = self.get_pop_vaccine_groups()
+        self.vaccine_groups = self.get_S_pop_vaccine_groups()
         self.vaccination_current_politic = self.who_can_vaccinate_3_groups()
         self.coverage_goals = [1.36, 2.50, 9.90, 16.40, 27.79, 34.30, 45.68, 52.19, 63.58, 63.58, 63.58]
 
 
 
-    def get_pop_vaccine_groups(self):
+    def get_S_pop_vaccine_groups(self):
         """
         Return the total number of people in the 3 neo-groups (S compartment only)
         """
         a = ['0-4', '5-9', '10-14', '15-19']
         b = ['20-24', '25-29', '30-34', '35-39', '40-44', '45-49', '50-54']
         c = ['55-59', '60-64', '65-69',  '70-74', '75+']
-        groups = ['0-19', '20-54', '55+']
         classes = ['S1', 'S2', 'S3', 'S4']
         vaccine_groups = []
         sumA, sumB, sumC = 0, 0, 0
@@ -95,6 +94,68 @@ class EpidemicVaccination(BaseEnv):
         vaccine_groups.append(sumC)
         return vaccine_groups
 
+
+    def get_total_pop_vaccine_groups(self):
+        """
+        Return the total number of people in the 3 neo-groups (S compartment only)
+        """
+        a = ['0-4', '5-9', '10-14', '15-19']
+        b = ['20-24', '25-29', '30-34', '35-39', '40-44', '45-49', '50-54']
+        c = ['55-59', '60-64', '65-69',  '70-74', '75+']
+        classes = ['S1', 'S2', 'S3', 'S4', 'E21', 'E22', 'E23', 'E31', 'E32', 'E33', 'E41', 'E42', 
+                   'E43', 'V11', 'V21', 'V31', 'V41', 'V12', 'V22', 'V32', 'V42', 'I2', 'I3', 'I4']
+        total_pop = []
+        sumA, sumB, sumC = 0, 0, 0
+        for i in a:
+            sumA += sum([self.model.current_state[i]['{}'.format(s)] for s in classes])
+        for i in b:
+            sumB += sum([self.model.current_state[i]['{}'.format(s)] for s in classes])
+        for i in c:
+            sumC += sum([self.model.current_state[i]['{}'.format(s)] for s in classes])
+        total_pop.append(sumA)
+        total_pop.append(sumB)
+        total_pop.append(sumC)
+        return total_pop
+
+    def get_dcv1_and_threshold(self):
+        """
+        Return the total number of people in the 3 neo-groups (S compartment only)
+        """
+        a = ['0-4', '5-9', '10-14', '15-19']
+        b = ['20-24', '25-29', '30-34', '35-39', '40-44', '45-49', '50-54']
+        c = ['55-59', '60-64', '65-69',  '70-74', '75+']
+        threshold_groups = []
+        sumA, sumB, sumC = 0, 0, 0
+        #print(self.model.coverage_threshold)
+        for i in [0,1,2,3]:
+            sumA += self.model.coverage_threshold[i]
+        sumA /= 4
+        for i in [4,5,6,7,8,9,10]:
+            sumB += self.model.coverage_threshold[i]
+        sumB /= 7
+        for i in [11,12,13,14,15]:
+            sumC += self.model.coverage_threshold[i]
+        sumC /= 5
+        sumA /= 0.8944
+        sumB /= 0.8944
+        sumC /= 0.8944
+        threshold_groups.append(sumA)
+        threshold_groups.append(sumB)
+        threshold_groups.append(sumC)   
+
+        dcv1_groups = []
+        sumA, sumB, sumC = 0, 0, 0
+        for i in [0,1,2,3]:
+            sumA += self.model.dCV1[i]
+        #print(self.model.dCV1)
+        for i in [4,5,6,7,8,9,10]:
+            sumB += self.model.dCV1[i]
+        for i in [11,12,13,14,15]:
+            sumC += self.model.dCV1[i]
+        dcv1_groups.append(sumA)
+        dcv1_groups.append(sumB)
+        dcv1_groups.append(sumC)
+        return dcv1_groups, threshold_groups
 
     def _compute_delta_coverage(self):
         maxcoverage = [x*100 for x in self.model._vaccination_coverage]
@@ -180,7 +241,6 @@ class EpidemicVaccination(BaseEnv):
             size = sum([self.model.current_state[self.model._age_groups[f]]['{}'.format(s)] for s in popGrp])
             if self.model.dCV1[f]/size >= self.model.coverage_threshold[f]/0.8944:
                 sigma[f] = 0
-        # print(self.model.t, (sum(self.model.dCV1))/Ntot*100)
         return sigma
 
 
@@ -201,7 +261,6 @@ class EpidemicVaccination(BaseEnv):
         if g>1:
             g=0.9
         sig = 1/mwl*(-math.log(1-g))
-        #print(sig)
         for k in range(3):
             if action[k] == 1:
                 if k == 0:
@@ -212,12 +271,15 @@ class EpidemicVaccination(BaseEnv):
                     sigma[k] = sig
             if sigma[k] < 0:
                 sigma[k] = 0
+        # BUGS ICI
+        total_pop = self.get_total_pop_vaccine_groups()
+        dcv1, threshold = self.get_dcv1_and_threshold()
         for f in range(3):
-            size = sum([self.model.current_state[self.model._age_groups[f]]['{}'.format(s)] for s in popGrp])
-            if self.model.dCV1[f]/size >= self.model.coverage_threshold[f]/0.8944:
+            size = total_pop[f]
+            if dcv1[f]/size >= threshold[f]:
                 sigma[f] = 0
-        print(sigma)
         return sigma
+        
 
     def _update_previous_env_state(self):
         """
@@ -346,13 +408,13 @@ class EpidemicVaccination(BaseEnv):
 
         # Modify model parameters based on state
         sigma = self.compute_sigma_with_action(action)
-        for i in range(16):
-            if i in [0,1,2,3]:
-                self.model.current_internal_params['sigma'][i] = sigma[0]
-            elif i in [4,5,6,7,8,9,10]:
-                self.model.current_internal_params['sigma'][i] = sigma[1]
-            else:
-                self.model.current_internal_params['sigma'][i] = sigma[2]
+        #print(sigma[0], sigma[1], sigma[2])
+        for j in [0, 1, 2, 3]:
+            self.model.current_internal_params['sigma'][j] = sigma[0]
+        for j in [4, 5, 6, 7, 8, 9, 10]:
+            self.model.current_internal_params['sigma'][j] = sigma[1]
+        for j in [11, 12, 13, 14, 15]:
+            self.model.current_internal_params['sigma'][j] = sigma[2]
         #print(self.model.current_internal_params['sigma'])
 
 
@@ -474,7 +536,7 @@ if __name__ == '__main__':
                     model=model,
                     simulation_horizon=simulation_horizon)
     env.reset()
-    model.current_state, model.current_internal_params, model_states = env.initialize_model_for_vaccine()
+    env.model.current_state, env.model.current_internal_params, model_states = env.initialize_model_for_vaccine()
     # for i in range(simulation_horizon):
     #     sigma = env.compute_sigma_no_action()
     #     model_state = model.run_n_steps()
@@ -482,8 +544,8 @@ if __name__ == '__main__':
     #     model_states += model_state.tolist()
 
     # #Actions
-    actions = random_actions()#([0,0,1], [0,0,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1])
-    print("list of actions", actions)
+    actions = ([0,0,1], [0,0,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1])
+    #print("list of actions", actions)
     t = 0
     r = 0
     done = False
@@ -496,27 +558,5 @@ if __name__ == '__main__':
     # Plot
     time = np.arange(simulation_horizon+1)
     plot_preds(t=time,states=np.array(stats['history']['model_states']).transpose()[23], title="Vaccination sur 3 groupes (0-19, 20-54, 55+) selon la politique réelle")
-
-
-    # # To delete if no GDP recess cost function
-    # N_region = model.pop_size[age_group]
-    # N_country = np.sum(list(model.pop_size.values()))
-    # ratio_death_to_R = 0.0001
-
-   
-
-    # plot model states
-    # plot_stats(t=stats['history']['env_timesteps'],
-    #            states=np.array(stats['history']['model_states']).transpose(),
-    #            labels=stats['model_states_labels'],
-    #            vaccination=np.array(stats['history']['vaccinations']),
-    #            time_jump=stats['time_jump'])
-    # plot_stats(t=stats['history']['env_timesteps'][1:],
-    #            states=stats['stats_run']['to_plot'],
-    #            labels=stats['stats_run']['labels'],
-    #            legends=stats['stats_run']['legends'],
-    #            title=stats['title'],
-    #            vaccination=np.array(stats['history']['vaccinations']),
-    #            time_jump=stats['time_jump'],
-    #            show=True
-    #            )
+    #plot_preds(t=time,states=np.array(stats['history']['costs']), title="Cost function")
+    print(np.array(stats['history']['deaths']))
