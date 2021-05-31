@@ -263,7 +263,6 @@ class DQN_vaccine(BaseAlgorithm):
         lengths = []
         for e in episodes:
             for t in range(e['env_states'].shape[0] - 1):
-                print(e)
                 self.replay_buffer.push(state=e['env_states'][t],
                                         action=e['actions'][t],
                                         aggregated_cost=e['aggregated_costs'][t],
