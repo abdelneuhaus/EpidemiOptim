@@ -42,6 +42,7 @@ def run_rollout(policy, env, eval, n=1, additional_keys=(), goal=None, reset_sam
         actions = []
         dones = []
         state = env.reset()
+        env.model.current_state, env.model.current_internal_params = env.initialize_model_for_vaccine()
         env_states.append(state)
 
         # Parameterize the cost function by the goal

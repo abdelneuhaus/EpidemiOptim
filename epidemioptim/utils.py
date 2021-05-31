@@ -812,3 +812,48 @@ def new_env_state(env):
             tmp.append(env[0][j])
         cp += 32
     return tmp
+
+def setup_for_replay(folder, seed=np.random.randint(1e6), deterministic_model=False):
+    from epidemioptim.environments.models import get_model
+    from epidemioptim.environments.cost_functions import get_cost_function
+    from epidemioptim.environments.gym_envs import get_env
+    from epidemioptim.optimization import get_algorithm
+
+    print('Replaying: ', folder)
+    with open(folder + 'params.json', 'r') as f:
+        params = json.load(f)
+
+    if deterministic_model:
+        params['model_params']['stochastic'] = False
+    params['logdir'] = None#get_repo_path() + 'data/results/experiments' + params['logdir'].split('EpidemicDiscrete-v0')[1]
+    model = get_model(model_id=params['model_id'],
+                        params=params['model_params'])
+
+    # update reward params
+    #params['cost_params']['N_region'] = int(model.pop_sizes[params['model_params']['region']])
+    #params['cost_params']['N_country'] = int(np.sum(list(model.pop_sizes.values())))
+
+    set_seeds(seed)
+
+    cost_function = get_cost_function(cost_function_id=params['cost_id'],
+                                      params=params['cost_params'])
+
+    # Form the Gym-like environment
+    env = get_env(env_id=params['env_id'],
+                  cost_function=cost_function,
+                  model=model,
+                  simulation_horizon=params['simulation_horizon'],
+                  seed=seed)
+
+    # Get DQN algorithm parameterized by beta
+    algorithm = get_algorithm(algo_id=params['algo_id'],
+                              env=env,
+                              params=params)
+
+
+    if params['algo_id'] == 'NGSA':
+        algorithm.load_model(folder + 'res_eval.pk')
+    else:
+        algorithm.load_model(folder + 'models/best_model.cp')
+
+    return algorithm, cost_function, env, params

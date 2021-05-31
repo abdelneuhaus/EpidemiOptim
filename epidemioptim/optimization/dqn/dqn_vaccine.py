@@ -265,7 +265,7 @@ class DQN_vaccine(BaseAlgorithm):
                 self.replay_buffer.push(state=e['env_states'][t],
                                         action=e['actions'][t],
                                         aggregated_cost=e['aggregated_costs'][t][0],
-                                        costs=e['costs'][1],
+                                        costs=e['costs'],
                                         next_state=e['env_states'][t + 1],
                                         constraints=None,
                                         goal=e['goal'],
@@ -458,11 +458,11 @@ class DQN_vaccine(BaseAlgorithm):
             costs_mean = np.mean(np.atleast_2d(costs), axis=0)
             costs_std = np.std(np.atleast_2d(costs), axis=0)
             for i_r in range(self.nb_costs):
-                new_logs['Eval, g: ' + str(self.cost_function.beta) + ': ' + 'mean_C{}'.format(i_r)] = costs_mean[i_r]
-                new_logs['Eval, g: ' + str(self.cost_function.beta) + ': ' + 'std_C{}'.format(i_r)] = costs_std[i_r]
+                new_logs['Eval, g: ' + str([]) + ': ' + 'mean_C{}'.format(i_r)] = costs_mean[i_r]
+                new_logs['Eval, g: ' + str([]) + ': ' + 'std_C{}'.format(i_r)] = costs_std[i_r]
             new_logs['Eval score'] = np.mean(aggregated_costs)
-            new_logs['Eval, g: ' + str(self.cost_function.beta) + ': ' + 'mean_agg'] = np.mean(aggregated_costs)
-            new_logs['Eval, g: ' + str(self.cost_function.beta) + ': ' + 'std_agg'] = np.mean(aggregated_costs)
+            new_logs['Eval, g: ' + str([]) + ': ' + 'mean_agg'] = np.mean(aggregated_costs)
+            new_logs['Eval, g: ' + str([]) + ': ' + 'std_agg'] = np.mean(aggregated_costs)
 
         return new_logs, costs
 
@@ -472,9 +472,10 @@ class DQN_vaccine(BaseAlgorithm):
             self.save_model(self.logdir + '/models/best_model.cp')
 
         train_log_dict = {'Episode': episode, 'Best score so far': self.best_cost}
+
         for i in range(self.nb_costs):
             train_log_dict['Loss {}'.format(i + 1)] = losses[i]
-            train_log_dict['Train, Cost {}'.format(i + 1)] = train_costs[i]
+            train_log_dict['Train, Cost {}'.format(i + 1)] = train_costs
             train_log_dict['Train, Aggregated cost'] = train_agg_cost
 
         new_logs.update(train_log_dict)

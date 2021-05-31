@@ -457,11 +457,11 @@ class EpidemicVaccination(BaseEnv):
         self._update_env_state()
 
         # Store history
-        costs = self.cost_function.compute_cost(previous_state=np.atleast_2d(self.previous_env_state),
+        costs = [c.compute_cost(previous_state=np.atleast_2d(self.previous_env_state),
                                                 state=np.atleast_2d(self.env_state),
                                                 label_to_id=self.label_to_id,
                                                 action=action,
-                                                others=dict(jump_of=self.time_resolution))
+                                                others=dict(jump_of=self.time_resolution)) for c in self.cost_function.costs]
         self.cumulative_costs[0] += costs[0]
         n_deaths = self.cost_function.compute_deaths(previous_state=np.atleast_2d(self.previous_env_state),
                                                      state=np.atleast_2d(self.env_state),
@@ -479,8 +479,16 @@ class EpidemicVaccination(BaseEnv):
 
         # Compute cost_function
         self.history['costs'] += [costs[0] / self.jump_of for _ in range(self.jump_of)]
-        self.costs = costs[0].copy()
 
+        cost_aggregated, costs, over_constraints = self.cost_function.compute_cost(previous_state=self.previous_env_state,
+                                                                                   state=self.env_state,
+                                                                                   label_to_id=self.label_to_id,
+                                                                                   action=action,
+                                                                                   others=dict(jump_of=self.jump_of))
+        costs = costs.flatten()
+
+        self.history['aggregated_costs'] += [cost_aggregated / self.jump_of] * self.jump_of
+        self.history['costs'] += [costs / self.jump_of for _ in range(self.jump_of)]
         if self.t >= self.simulation_horizon:
             done = 1
         else:
@@ -529,13 +537,13 @@ if __name__ == '__main__':
 
     simulation_horizon = 360
     model = get_model(model_id='heffernan_model', params=dict(stochastic=False))
-    cost_func = get_cost_function(cost_function_id='death_toll_cost_vaccine', params=dict(id_cost=0, ratio_death_to_R=0.0001))
+    cost_func = get_cost_function(cost_function_id='one_cost_death_toll', params=dict(ratio_death_to_R=0.0001))
     env = gym.make('EpidemicVaccination-v0',
                     cost_function=cost_func,
                     model=model,
                     simulation_horizon=simulation_horizon)
     env.reset()
-    env.model.current_state, env.model.current_internal_params, model_states = env.initialize_model_for_vaccine()
+    env.model.current_state, env.model.current_internal_params = env.initialize_model_for_vaccine()
 
     # Actions
     actions = ([0,0,1], [0,0,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1])
@@ -549,8 +557,8 @@ if __name__ == '__main__':
         done = out[2]
     stats = env.unwrapped.get_data()
     # Plot
-    time = np.arange(simulation_horizon-1)
-    #plot_preds(t=time,states=np.array(stats['history']['model_states']).transpose()[23], title="Vaccination sur 3 groupes (0-19, 20-54, 55+) selon la politique réelle")
-    plt.plot(np.arange(simulation_horizon),np.array(stats['history']['costs']))
-    plt.title("Non-cumulative cost function (number of death each month)")
-    plt.show()
+    time = np.arange(simulation_horizon+1)
+    plot_preds(t=time,states=np.array(stats['history']['model_states']).transpose()[23], title="Vaccination sur 3 groupes (0-19, 20-54, 55+) selon la politique réelle")
+    #plt.plot(np.arange(simulation_horizon),np.array(stats['history']['costs']))
+    #plt.title("Non-cumulative cost function (number of death each month)")
+    #plt.show()

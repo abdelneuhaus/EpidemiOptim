@@ -54,8 +54,6 @@ class DeathTollVaccine(BaseCostFunction):
 
         """
         # compute new deaths
-        popGrp = ['S1', 'S2', 'S3', 'S4', 'E21', 'E22', 'E23', 'E31', 'E32', 'E33', 'E41', 'E42', 
-                  'E43', 'V11', 'V21', 'V31', 'V41', 'V12', 'V22', 'V32', 'V42', 'I2', 'I3', 'I4']
         sum_previous = sum(new_env_state(previous_state))
         sum_actual = sum(new_env_state(state))
         new_deaths = sum_previous - sum_actual
