@@ -266,6 +266,31 @@ class HeffernanOdeModel(BaseModel):
                                                        CV420=DiracDist(params=0, stochastic=self.stochastic)
                                                        )
 
+    def reset(self, delay=None) -> None:
+        """Resets the model parameters, and state, add delay.
+
+        Parameters
+        ----------
+        delay: int, optional
+               Number of days the model should be run for before the start of the episode.
+               Default is 0.
+
+        """
+        self._sample_model_params()
+        self._sample_initial_state()
+        self._reset_state()
+        self.dCV1 = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        self.dCV2 = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        self.vacStep = 0
+        self.step = 0
+        self.t = 0
+        self.k = 1
+        
+        if self.stochastic:
+            if delay is not None:
+                self.delay(random=False, delay=delay)
+            else:
+                self.delay()
 
     def _reset_state(self):
         """

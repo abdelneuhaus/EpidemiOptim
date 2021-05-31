@@ -88,7 +88,7 @@ class DQN_vaccine(BaseAlgorithm):
         self.stochastic = params['model_params']['stochastic']
         self.epsilon = self.algo_params['epsilon_greedy']
         self.cost_function = self.env.unwrapped.cost_function
-        self.nb_costs = self.env.unwrapped.cost_function.nb_costs
+        self.nb_costs = 1#self.env.unwrapped.cost_function.nb_costs
         self.use_constraints = self.cost_function.use_constraints
         self.is_multi_obj = True if self.goal_conditioned else False  # DQN is not a multi-obj algorithm, unless it is goal-conditioned
         self.dims = dict(s=env.observation_space.shape[0],
@@ -221,7 +221,6 @@ class DQN_vaccine(BaseAlgorithm):
 
         action = ag.Variable(torch.LongTensor(action))
         indices = np.arange(self.batch_size)
-
         rewards = [- ag.Variable(torch.FloatTensor(c_func.scale(c))) for c_func, c in zip(self.cost_function.costs, costs.transpose())]
 
 
@@ -265,8 +264,8 @@ class DQN_vaccine(BaseAlgorithm):
             for t in range(e['env_states'].shape[0] - 1):
                 self.replay_buffer.push(state=e['env_states'][t],
                                         action=e['actions'][t],
-                                        aggregated_cost=e['aggregated_costs'][t],
-                                        costs=e['costs'],
+                                        aggregated_cost=e['aggregated_costs'][t][0],
+                                        costs=e['costs'][1],
                                         next_state=e['env_states'][t + 1],
                                         constraints=None,
                                         goal=e['goal'],

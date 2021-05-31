@@ -360,15 +360,9 @@ class EpidemicVaccination(BaseEnv):
         self.cumulative_costs = [0 for _ in range(self.nb_costs)]
 
         # initialize model internal state and params
-        if self.reset_same:
-            self.model.reset_same_model()
-            self.reset_same = False
-        else:
-            self.model.reset()
+        self.model.reset()
         self.model_state = self.model._get_current_state()
-        #self.model_state, self.model.current_internal_params = self.model.initialize_model_for_vaccine()
 
-        #self.model.current_state, , model_states = self.initialize_model_for_vaccine()        
         self._update_previous_env_state()
         self._update_env_state()
 
