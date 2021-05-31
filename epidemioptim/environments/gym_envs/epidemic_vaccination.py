@@ -126,7 +126,6 @@ class EpidemicVaccination(BaseEnv):
         c = ['55-59', '60-64', '65-69',  '70-74', '75+']
         threshold_groups = []
         sumA, sumB, sumC = 0, 0, 0
-        #print(self.model.coverage_threshold)
         for i in [0,1,2,3]:
             sumA += self.model.coverage_threshold[i]
         sumA /= 4
@@ -147,7 +146,6 @@ class EpidemicVaccination(BaseEnv):
         sumA, sumB, sumC = 0, 0, 0
         for i in [0,1,2,3]:
             sumA += self.model.dCV1[i]
-        #print(self.model.dCV1)
         for i in [4,5,6,7,8,9,10, 11, 12]:
             sumB += self.model.dCV1[i]
         for i in [13,14,15]:
@@ -360,7 +358,9 @@ class EpidemicVaccination(BaseEnv):
         else:
             self.model.reset()
         self.model_state = self.model._get_current_state()
+        #self.model_state, self.model.current_internal_params = self.model.initialize_model_for_vaccine()
 
+        #self.model.current_state, , model_states = self.initialize_model_for_vaccine()        
         self._update_previous_env_state()
         self._update_env_state()
 
@@ -381,10 +381,9 @@ class EpidemicVaccination(BaseEnv):
             Action is a list with 0 (no vaccination) or 1 (vaccination).
 
         """
-
+        
         # Translate actions
         self.previous_politic = self.vaccination_politic
-        
         for i in range(3):
             if action[i] == 0:
                 # no vaccination
@@ -435,6 +434,11 @@ class EpidemicVaccination(BaseEnv):
             Further infos. In our case, the costs, icu capacity of the region and whether constraints are violated.
 
         """
+        print(action)
+        if type(action) != list():
+            transpose_action = ([0,0,0], [0,0,1], [0,1,0], [1,0,0], [1,1,0], [1,0,1], [0,1,1], [1,1,1])
+            action = transpose_action[action]
+
         action = list(action)
         self.update_with_action(action)
         
@@ -531,15 +535,9 @@ if __name__ == '__main__':
                     simulation_horizon=simulation_horizon)
     env.reset()
     env.model.current_state, env.model.current_internal_params, model_states = env.initialize_model_for_vaccine()
-    # for i in range(simulation_horizon):
-    #     sigma = env.compute_sigma_no_action()
-    #     model_state = model.run_n_steps()
-    #     model.current_internal_params['sigma'] = np.array(sigma)
-    #     model_states += model_state.tolist()
 
-    # #Actions
-    actions = random_actions()#([0,0,1], [0,0,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1])
-    #print(actions)
+    # Actions
+    actions = ([0,0,1], [0,0,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1])
     t = 0
     r = 0
     done = False
@@ -555,4 +553,3 @@ if __name__ == '__main__':
     plt.plot(np.arange(simulation_horizon),np.array(stats['history']['costs']))
     plt.title("Non-cumulative cost function (number of death each month)")
     plt.show()
-    #print(np.array(stats['history']['deaths']))

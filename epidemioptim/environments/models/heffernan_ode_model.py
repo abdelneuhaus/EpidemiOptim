@@ -223,7 +223,7 @@ class HeffernanOdeModel(BaseModel):
                                                          epsilon=1-0.559,
                                                          gamma=np.array(duplicate_data([0, 0.2, 0.1, 1/15], 16)).T,
                                                          kappa=np.array(duplicate_data([0, 1/1.5, 1/1.5, 1/1.5], 16)).T,
-                                                         nu=None,
+                                                         nu=0,
                                                          omega=np.array(duplicate_data([0, 1/365, 1/365, 1/365], 16)).T,
                                                          p1=np.array(self.p1).T,
                                                          p2=np.array(self.p2).T,

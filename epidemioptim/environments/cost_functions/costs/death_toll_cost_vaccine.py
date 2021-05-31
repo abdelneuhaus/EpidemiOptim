@@ -60,9 +60,7 @@ class DeathTollVaccine(BaseCostFunction):
             for k in popGrp:
                 sum_previous += previous_state[0][i][k]
                 sum_actual += state[0][i][k]
-            #print(k)
         new_deaths = sum_previous - sum_actual
-        #print(new_deaths)
         return new_deaths
 
     def compute_cumulative_cost(self, previous_state, state, label_to_id, action, others={}):
