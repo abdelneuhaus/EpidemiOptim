@@ -105,8 +105,8 @@ class OneCostDeathToll(BaseMultiCostFunction):
         cumulative_costs = np.array([c.compute_cumulative_cost(previous_state, state, label_to_id, action, others) for c in self.costs]).transpose()
 
         # Apply constraints
-        cost_aggregated = self.compute_aggregated_cost(costs.copy())
-        over_constraints = np.atleast_2d([False] * state.shape[0]).transpose()
+        cost_aggregated = costs[0]#self.compute_aggregated_cost(costs.copy())
+        over_constraints = 0#np.atleast_2d([False] * state.shape[0]).transpose()
         return cost_aggregated, costs, over_constraints
 
     def compute_deaths(self, previous_state, state, label_to_id, action, others={}):
@@ -148,8 +148,6 @@ class OneCostDeathToll(BaseMultiCostFunction):
         float
             Aggregated cost.
         """
-        if beta is None:
-            beta = self.beta
         factors = np.array([1 - beta, beta])
         normalized_costs = np.array([cf.scale(c) for (cf, c) in zip(self.costs, costs.transpose())])
         cost_aggregated = np.matmul(factors, normalized_costs)

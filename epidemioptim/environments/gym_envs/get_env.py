@@ -15,7 +15,7 @@ def get_env(env_id, **kwargs):
     """
     env = gym.make(env_id, **kwargs)
     if env_id == 'EpidemicVaccination-v0':
-        env.model.current_state, env.model.current_internal_params, model_states = env.initialize_model_for_vaccine()
+        env.model.current_state, env.model.current_internal_params = env.initialize_model_for_vaccine()
     return env
 
 

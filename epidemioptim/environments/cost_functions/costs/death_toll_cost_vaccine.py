@@ -1,3 +1,4 @@
+from epidemioptim.utils import new_env_state
 from epidemioptim.environments.cost_functions.costs.base_cost_function import BaseCostFunction
 
 
@@ -55,11 +56,8 @@ class DeathTollVaccine(BaseCostFunction):
         # compute new deaths
         popGrp = ['S1', 'S2', 'S3', 'S4', 'E21', 'E22', 'E23', 'E31', 'E32', 'E33', 'E41', 'E42', 
                   'E43', 'V11', 'V21', 'V31', 'V41', 'V12', 'V22', 'V32', 'V42', 'I2', 'I3', 'I4']
-        sum_previous, sum_actual = 0.0, 0.0
-        for i in range(16):
-            for k in popGrp:
-                sum_previous += previous_state[0][i][k]
-                sum_actual += state[0][i][k]
+        sum_previous = sum(new_env_state(previous_state))
+        sum_actual = sum(new_env_state(state))
         new_deaths = sum_previous - sum_actual
         return new_deaths
 
@@ -85,5 +83,4 @@ class DeathTollVaccine(BaseCostFunction):
             Cumulative costs for each state.
         """
         cumulative_cost = state[:, label_to_id['cumulative_cost_{}'.format(self.id_cost)]]
-        print(cumulative_cost)
         return cumulative_cost

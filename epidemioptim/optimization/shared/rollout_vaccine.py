@@ -44,6 +44,7 @@ def run_rollout(policy, env, eval, n=1, additional_keys=(), goal=None, reset_sam
         if reset_same_model:
             env.reset_same_model()
         state = env.reset()
+        #env.model.current_state, env.model.current_internal_params = env.initialize_model_for_vaccine()
         env_states.append(state)
 
         # Parameterize the cost function by the goal
@@ -74,9 +75,6 @@ def run_rollout(policy, env, eval, n=1, additional_keys=(), goal=None, reset_sam
             env_states.append(state)
             dones.append(done)
 
-            for k in additional_keys:
-                episode[k].append(info[k])
-
         # Form episode dict
         episode.update(env_states=np.array(env_states),
                        aggregated_costs=np.array(aggregated_costs),
@@ -84,5 +82,6 @@ def run_rollout(policy, env, eval, n=1, additional_keys=(), goal=None, reset_sam
                        goal=goal[i],
                        eval=eval,
                        dones=np.array(dones))
+        episode['costs'] = info['costs']
         episodes.append(episode)
     return episodes

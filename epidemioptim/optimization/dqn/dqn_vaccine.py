@@ -263,12 +263,13 @@ class DQN_vaccine(BaseAlgorithm):
         lengths = []
         for e in episodes:
             for t in range(e['env_states'].shape[0] - 1):
+                print(e)
                 self.replay_buffer.push(state=e['env_states'][t],
                                         action=e['actions'][t],
                                         aggregated_cost=e['aggregated_costs'][t],
-                                        costs=e['costs'][t],
+                                        costs=e['costs'],
                                         next_state=e['env_states'][t + 1],
-                                        constraints=e['constraints'][t],
+                                        constraints=None,
                                         goal=e['goal'],
                                         done=e['dones'][t])
             lengths.append(e['env_states'].shape[0] - 1)
@@ -292,7 +293,8 @@ class DQN_vaccine(BaseAlgorithm):
         q_constraints: nd.array
             Values of the critics estimating the expected constraint violations.
         """
-        print(state)
+        state=state.tolist()
+        state=torch.FloatTensor(state)
         if np.random.rand() > self.epsilon or deterministic:
             with torch.no_grad():
                 state = ag.Variable(torch.FloatTensor(state).unsqueeze(0))
@@ -370,13 +372,12 @@ class DQN_vaccine(BaseAlgorithm):
                 goal = self.env.unwrapped.sample_cost_function_params()
             else:
                 goal = None
-            #print(self.env.env_state)
             episodes = run_rollout(policy=self,
                                    env=self.env,
                                    n=1,
                                    goal=goal,
                                    eval=False,
-                                   additional_keys=('costs', 'constraints'),
+                                   additional_keys=('costs'),
                                    )
             lengths = self.store_episodes(episodes)
             self.env_step_counter += np.sum(lengths)
@@ -408,7 +409,6 @@ class DQN_vaccine(BaseAlgorithm):
 
             if self.episode % self.save_policy_every == 0:
                 self.save_model(self.logdir + '/models/policy_{}.cp'.format(self.episode))
-        self.evaluate_pareto()
         print('Run has terminated successfully')
 
     def evaluate(self, n=None, goal=None, best=None, reset_same_model=False):

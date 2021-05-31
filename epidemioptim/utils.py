@@ -795,3 +795,20 @@ def random_actions():
             sub.append(random.randint(0, 1))
         data.append(sub)
     return data
+
+def as_list(x):
+    if type(x) is list:
+        return x
+    else:
+        return [x]
+
+
+def new_env_state(env):
+    tmp = []
+    cp = 0
+    d = 24
+    for i in range(16):
+        for j in range(cp, cp+d):
+            tmp.append(env[0][j])
+        cp += 32
+    return tmp

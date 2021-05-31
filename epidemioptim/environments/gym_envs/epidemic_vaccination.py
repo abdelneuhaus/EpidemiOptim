@@ -178,7 +178,8 @@ class EpidemicVaccination(BaseEnv):
             model_state = self.model.run_n_steps()
             model_states += model_state.tolist()
             self.model_state = self.model._get_current_state()
-        return self.model.current_state, self.model.current_internal_params, model_states
+        return self.model.current_state, self.model.current_internal_params
+        #return self.model.current_state, self.model.current_internal_params, model_states
     
 
     def who_can_vaccinate_3_groups(self):
@@ -269,7 +270,6 @@ class EpidemicVaccination(BaseEnv):
                     sigma[k] = sig
             if sigma[k] < 0:
                 sigma[k] = 0
-        # BUGS ICI
         total_pop = self.get_total_pop_vaccine_groups()
         dcv1, threshold = self.get_dcv1_and_threshold()
         for f in range(3):
@@ -306,8 +306,16 @@ class EpidemicVaccination(BaseEnv):
         for id_cost in range(self.nb_costs):
             self.env_state_labelled['cumulative_cost_{}'.format(id_cost)] = self.cumulative_costs[id_cost]
         assert sorted(list(self.env_state_labelled.keys())) == sorted(self.state_labels), "labels do not match"
-        self.env_state = np.array([self.env_state_labelled[k] for k in self.state_labels])
 
+        self.env_state = np.array([self.env_state_labelled[k] for k in self.state_labels])
+        for i in range(16):
+            self.env_state[i] = [self.env_state[i][j] for j in self.model.internal_states_labels]
+        merge = []
+        for i in self.env_state:
+            if type(i) != list():
+                i = as_list(i)
+            merge = merge + i
+        self.env_state = np.array(merge)
         # Set previous env state to env state if first step
         if self.previous_env_state is None:
             # happens at first step
@@ -434,10 +442,9 @@ class EpidemicVaccination(BaseEnv):
             Further infos. In our case, the costs, icu capacity of the region and whether constraints are violated.
 
         """
-        print(action)
-        if type(action) != list():
+        if isinstance(action, np.ndarray):
             transpose_action = ([0,0,0], [0,0,1], [0,1,0], [1,0,0], [1,1,0], [1,0,1], [0,1,1], [1,1,1])
-            action = transpose_action[action]
+            action = transpose_action[action[0]]
 
         action = list(action)
         self.update_with_action(action)
@@ -461,8 +468,8 @@ class EpidemicVaccination(BaseEnv):
                                                 label_to_id=self.label_to_id,
                                                 action=action,
                                                 others=dict(jump_of=self.time_resolution))
-        self.cumulative_costs[0] += costs
-        n_deaths = self.cost_function.compute_cost(previous_state=np.atleast_2d(self.previous_env_state),
+        self.cumulative_costs[0] += costs[0]
+        n_deaths = self.cost_function.compute_deaths(previous_state=np.atleast_2d(self.previous_env_state),
                                                      state=np.atleast_2d(self.env_state),
                                                      label_to_id=self.label_to_id,
                                                      action=action)
@@ -477,14 +484,14 @@ class EpidemicVaccination(BaseEnv):
         self.history['deaths'] += [n_deaths / self.jump_of] * self.jump_of
 
         # Compute cost_function
-        self.history['costs'] += [costs / self.jump_of for _ in range(self.jump_of)]
-        self.costs = costs.copy()
+        self.history['costs'] += [costs[0] / self.jump_of for _ in range(self.jump_of)]
+        self.costs = costs[0].copy()
 
         if self.t >= self.simulation_horizon:
             done = 1
         else:
             done = 0
-        return self._normalize_env_state(self.env_state), costs, done
+        return self._normalize_env_state(self.env_state), costs, done, dict(costs=costs)
 
     # Utils
     def _normalize_env_state(self, env_state):
