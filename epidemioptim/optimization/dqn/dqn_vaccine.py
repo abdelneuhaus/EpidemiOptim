@@ -428,7 +428,7 @@ class DQN_vaccine(BaseAlgorithm):
                                     goal=eval_goals,
                                     eval=True,
                                     reset_same_model=reset_same_model,
-                                    additional_keys=('costs', 'constraints'),
+                                    additional_keys=('costs'),
                                     )
         new_logs, costs = self.compute_eval_score(eval_episodes, eval_goals)
         return new_logs, costs

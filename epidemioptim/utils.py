@@ -770,8 +770,8 @@ def plot_preds(t, states, title):
     plt.plot(t, states[13], color='mediumorchid', label='65-69')
     plt.plot(t, states[14], color='orangered', label='70-74')
     plt.plot(t, states[15], color='olive', label='75+')
-    plt.axvline(x=370, label='Start of vaccination', color='red', linewidth=1, linestyle='--')
-    plt.axvline(x=631, label='End of 1st dose', linewidth=1, linestyle='--')
+    plt.axvline(x=0, label='Start of vaccination', color='red', linewidth=1, linestyle='--')
+    plt.axvline(x=631-370, label='End of 1st dose', linewidth=1, linestyle='--')
     plt.legend()
     plt.title(title)
     plt.show()
@@ -829,10 +829,6 @@ def setup_for_replay(folder, seed=np.random.randint(1e6), deterministic_model=Fa
     model = get_model(model_id=params['model_id'],
                         params=params['model_params'])
 
-    # update reward params
-    #params['cost_params']['N_region'] = int(model.pop_sizes[params['model_params']['region']])
-    #params['cost_params']['N_country'] = int(np.sum(list(model.pop_sizes.values())))
-
     set_seeds(seed)
 
     cost_function = get_cost_function(cost_function_id=params['cost_id'],
@@ -851,9 +847,9 @@ def setup_for_replay(folder, seed=np.random.randint(1e6), deterministic_model=Fa
                               params=params)
 
 
-    if params['algo_id'] == 'NGSA':
-        algorithm.load_model(folder + 'res_eval.pk')
-    else:
-        algorithm.load_model(folder + 'models/best_model.cp')
+    # if params['algo_id'] == 'NGSA':
+    #     algorithm.load_model(folder + 'res_eval.pk')
+    # else:
+    algorithm.load_model(folder + 'models/policy_22.cp')
 
     return algorithm, cost_function, env, params

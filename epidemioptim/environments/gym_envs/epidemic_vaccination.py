@@ -438,8 +438,8 @@ class EpidemicVaccination(BaseEnv):
         """
         if isinstance(action, np.ndarray):
             transpose_action = ([0,0,0], [0,0,1], [0,1,0], [1,0,0], [1,1,0], [1,0,1], [0,1,1], [1,1,1])
+            #transpose_action = ([0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1])
             action = transpose_action[action[0]]
-
         action = list(action)
         self.update_with_action(action)
         
@@ -469,7 +469,6 @@ class EpidemicVaccination(BaseEnv):
                                                      action=action)
 
         self._update_env_state()
-
         self.history['actions'] += [action] * self.jump_of
         self.history['env_states'] += [self.env_state.copy()] * self.jump_of
         self.history['env_timesteps'] += list(range(self.t - self.jump_of, self.t))
@@ -486,14 +485,14 @@ class EpidemicVaccination(BaseEnv):
                                                                                    action=action,
                                                                                    others=dict(jump_of=self.jump_of))
         costs = costs.flatten()
-
+        print(action)
         self.history['aggregated_costs'] += [cost_aggregated / self.jump_of] * self.jump_of
         self.history['costs'] += [costs / self.jump_of for _ in range(self.jump_of)]
         if self.t >= self.simulation_horizon:
             done = 1
         else:
             done = 0
-        return self._normalize_env_state(self.env_state), costs, done, dict(costs=costs)
+        return self._normalize_env_state(self.env_state), cost_aggregated, done, dict(costs=costs)
 
     # Utils
     def _normalize_env_state(self, env_state):
