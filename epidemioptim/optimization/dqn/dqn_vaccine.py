@@ -460,7 +460,7 @@ class DQN_vaccine(BaseAlgorithm):
             for i_r in range(self.nb_costs):
                 new_logs['Eval, g: ' + str([]) + ': ' + 'mean_C{}'.format(i_r)] = costs_mean[i_r]
                 new_logs['Eval, g: ' + str([]) + ': ' + 'std_C{}'.format(i_r)] = costs_std[i_r]
-            new_logs['Eval score'] = np.mean(aggregated_costs)
+            new_logs['Eval score'] = np.mean(costs)
             new_logs['Eval, g: ' + str([]) + ': ' + 'mean_agg'] = np.mean(aggregated_costs)
             new_logs['Eval, g: ' + str([]) + ': ' + 'std_agg'] = np.mean(aggregated_costs)
 

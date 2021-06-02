@@ -852,6 +852,6 @@ def setup_for_replay(folder, seed=np.random.randint(1e6), deterministic_model=Fa
     # if params['algo_id'] == 'NGSA':
     #     algorithm.load_model(folder + 'res_eval.pk')
     # else:
-    algorithm.load_model(folder + 'models/policy_22.cp')
+    algorithm.load_model(folder + 'models/best_model.cp')
 
     return algorithm, cost_function, env, params

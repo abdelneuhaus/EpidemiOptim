@@ -485,7 +485,7 @@ class EpidemicVaccination(BaseEnv):
                                                                                    action=action,
                                                                                    others=dict(jump_of=self.jump_of))
         costs = costs.flatten()
-        print(action)
+        # print(action)
         self.history['aggregated_costs'] += [cost_aggregated / self.jump_of] * self.jump_of
         self.history['costs'] += [costs / self.jump_of for _ in range(self.jump_of)]
         if self.t >= self.simulation_horizon:

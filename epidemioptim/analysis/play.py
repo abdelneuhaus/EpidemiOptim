@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 from epidemioptim.utils import plot_stats, get_repo_path, setup_for_replay, plot_preds
 
-NB_EPISODES = 1
+NB_EPISODES = 9
 FOLDER = get_repo_path() + "data/results/EpidemicVaccination-v0/DQN_vaccine/"
 SAVE = True
 
@@ -42,7 +42,7 @@ def play(folder, nb_eps, seed, save=False):
 
 
         # Plot
-        #print(stats['history']['actions'])
+        print(stats['history']['actions'])
         #print(stats['history']['deaths'])
         plot_preds(t=stats['history']['env_timesteps'],states=np.array(stats['history']['model_states']).transpose()[23], title="Vaccination sur 3 groupes (0-19, 20-54, 55+) selon la politique réelle")
     
