@@ -772,6 +772,8 @@ def plot_preds(t, states, title):
     plt.plot(t, states[15], color='olive', label='75+')
     plt.axvline(x=0, label='Start of vaccination', color='red', linewidth=1, linestyle='--')
     plt.axvline(x=631-370, label='End of 1st dose', linewidth=1, linestyle='--')
+    plt.xlabel("Time (in days)")
+    plt.ylabel("Number of hospitalizations")
     plt.legend()
     plt.title(title)
     plt.show()
