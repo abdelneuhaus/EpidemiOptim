@@ -56,7 +56,7 @@ class DeathTollVaccine(BaseCostFunction):
         # compute new deaths
         sum_previous = sum(new_env_state(previous_state))
         sum_actual = sum(new_env_state(state))
-        new_deaths = sum_previous - sum_actual
+        new_deaths = sum_actual - sum_previous
         return new_deaths
 
     def compute_cumulative_cost(self, previous_state, state, label_to_id, action, others={}):

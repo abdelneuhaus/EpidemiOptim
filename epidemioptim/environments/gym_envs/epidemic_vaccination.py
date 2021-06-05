@@ -258,7 +258,7 @@ class EpidemicVaccination(BaseEnv):
                 wcv += self.vaccine_groups[n]
         g = (pi*Ntot/wcv)
         if g>1:
-            g=0.9
+            g=0.99999999
         sig = 1/mwl*(-math.log(1-g))
         for k in range(3):
             if action[k] == 1:
@@ -438,7 +438,6 @@ class EpidemicVaccination(BaseEnv):
         """
         if isinstance(action, np.ndarray):
             transpose_action = ([0,0,0], [0,0,1], [0,1,0], [1,0,0], [1,1,0], [1,0,1], [0,1,1], [1,1,1])
-            #transpose_action = ([0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1])
             action = transpose_action[action[0]]
         action = list(action)
         self.update_with_action(action)

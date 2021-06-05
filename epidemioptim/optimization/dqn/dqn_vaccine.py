@@ -436,7 +436,6 @@ class DQN_vaccine(BaseAlgorithm):
     def compute_eval_score(self, eval_episodes, eval_goals):
         aggregated_costs = [np.sum(e['aggregated_costs']) for e in eval_episodes]
         costs = np.array([np.sum(e['costs'], axis=0) for e in eval_episodes])
-
         new_logs = dict()
         if self.goal_conditioned:
             goals, index, inverse = np.unique(eval_goals, return_inverse=True, return_index=True, axis=0)

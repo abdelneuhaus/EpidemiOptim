@@ -6,8 +6,8 @@ import matplotlib.pyplot as plt
 
 from epidemioptim.utils import plot_stats, get_repo_path, setup_for_replay, plot_preds
 
-NB_EPISODES = 9
-FOLDER = get_repo_path() + "data/results/EpidemicVaccination-v0/DQN_vaccine/"
+NB_EPISODES = 1
+FOLDER = get_repo_path() + "data/results/EpidemicVaccination-v0/"
 SAVE = True
 
 def play(folder, nb_eps, seed, save=False):
