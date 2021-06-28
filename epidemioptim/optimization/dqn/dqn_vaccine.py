@@ -212,13 +212,8 @@ class DQN_vaccine(BaseAlgorithm):
         state, action, cost_aggregated, costs, next_state, goal, done, constraints = self.replay_buffer.sample(batch_size)
 
         # Concatenate goal if the policy is goal conditioned (might not be used afterwards).
-        if self.goal_conditioned:
-            state = ag.Variable(torch.FloatTensor(np.float32(np.concatenate([state, goal], axis=1))))
-            next_state = ag.Variable(torch.FloatTensor(np.float32(np.concatenate([next_state, goal], axis=1))))
-        else:
-            state = ag.Variable(torch.FloatTensor(np.float32(state)))
-            next_state = ag.Variable(torch.FloatTensor(np.float32(next_state)))
-
+        state = ag.Variable(torch.FloatTensor(np.float32(state)))
+        next_state = ag.Variable(torch.FloatTensor(np.float32(next_state)))
         action = ag.Variable(torch.LongTensor(action))
         indices = np.arange(self.batch_size)
         rewards = [- ag.Variable(torch.FloatTensor(c_func.scale(c))) for c_func, c in zip(self.cost_function.costs, costs.transpose())]
@@ -230,7 +225,7 @@ class DQN_vaccine(BaseAlgorithm):
         q_evals = self.Q_eval.forward(next_state)
 
         max_actions = [torch.argmax(q_ev, dim=1) for q_ev in q_evals]
-
+        # print(q_preds, q_nexts, q_evals)
         q_targets = [r + self.gamma * q_nex[indices, max_act] for r, q_nex, max_act in zip(rewards, q_nexts, max_actions)]
         losses = [(q_pre - ag.Variable(q_targ.data)).pow(2).mean() for q_pre, q_targ in zip(q_preds, q_targets)]
         for loss in losses:
@@ -239,22 +234,6 @@ class DQN_vaccine(BaseAlgorithm):
         for opt in self.optimizers:
             opt.step()
 
-        if self.use_constraints:
-            constraints = [ag.Variable(torch.FloatTensor(constraints[:, i])) for i in range(self.nb_constraints)]
-
-            q_preds = list(self.Q_eval_constraints.forward(state))
-            q_preds = [q_p[indices, action.squeeze()] for q_p in q_preds]
-            q_nexts = self.Q_next_constraints.forward(next_state)
-            q_evals = self.Q_eval_constraints.forward(next_state)
-
-            for i_q in range(self.nb_constraints):
-                max_actions = torch.argmax(q_evals[i_q], dim=1)
-                q_target = - constraints[i_q] + 1 * q_nexts[i_q][indices, max_actions]
-                losses.append((q_preds[i_q] - ag.Variable(q_target.data)).pow(2).mean())
-                losses[-1].backward()
-
-            for opt in self.optimizers_constraints:
-                opt.step()
         self.learn_step_counter += 1
         return losses
 
@@ -437,31 +416,14 @@ class DQN_vaccine(BaseAlgorithm):
         aggregated_costs = [np.sum(e['aggregated_costs']) for e in eval_episodes]
         costs = np.array([np.sum(e['costs'], axis=0) for e in eval_episodes])
         new_logs = dict()
-        if self.goal_conditioned:
-            goals, index, inverse = np.unique(eval_goals, return_inverse=True, return_index=True, axis=0)
-            agg_means = []
-            for g, i in zip(goals, np.arange(index.size)):
-                ind_g = np.argwhere(inverse == i).flatten()
-                costs_mean = np.mean(costs[ind_g], axis=0)
-                costs_std = np.std(costs[ind_g], axis=0)
-                agg_rew_mean = np.mean(np.array(aggregated_costs)[ind_g], axis=0)
-                agg_rew_std = np.std(np.array(aggregated_costs)[ind_g], axis=0)
-                for i_r in range(self.nb_costs):
-                    new_logs['Eval, g: ' + str(g) + ': ' + 'mean_C{}'.format(i_r)] = costs_mean[i_r]
-                    new_logs['Eval, g: ' + str(g) + ': ' + 'std_C{}'.format(i_r)] = costs_std[i_r]
-                new_logs['Eval, g: ' + str(g) + ': ' + 'mean_agg'] = agg_rew_mean
-                new_logs['Eval, g: ' + str(g) + ': ' + 'std_agg'] = agg_rew_std
-                agg_means.append(agg_rew_mean)
-            new_logs['Eval score'] = np.mean(agg_means)
-        else:
-            costs_mean = np.mean(np.atleast_2d(costs), axis=0)
-            costs_std = np.std(np.atleast_2d(costs), axis=0)
-            for i_r in range(self.nb_costs):
-                new_logs['Eval, g: ' + str([]) + ': ' + 'mean_C{}'.format(i_r)] = costs_mean[i_r]
-                new_logs['Eval, g: ' + str([]) + ': ' + 'std_C{}'.format(i_r)] = costs_std[i_r]
-            new_logs['Eval score'] = np.mean(costs)
-            new_logs['Eval, g: ' + str([]) + ': ' + 'mean_agg'] = np.mean(aggregated_costs)
-            new_logs['Eval, g: ' + str([]) + ': ' + 'std_agg'] = np.mean(aggregated_costs)
+        costs_mean = np.mean(np.atleast_2d(costs), axis=0)
+        costs_std = np.std(np.atleast_2d(costs), axis=0)
+        for i_r in range(self.nb_costs):
+            new_logs['Eval, g: ' + str([]) + ': ' + 'mean_C{}'.format(i_r)] = costs_mean[i_r]
+            new_logs['Eval, g: ' + str([]) + ': ' + 'std_C{}'.format(i_r)] = costs_std[i_r]
+        new_logs['Eval score'] = np.mean(costs)
+        new_logs['Eval, g: ' + str([]) + ': ' + 'mean_agg'] = np.mean(aggregated_costs)
+        new_logs['Eval, g: ' + str([]) + ': ' + 'std_agg'] = np.mean(aggregated_costs)
 
         return new_logs, costs
 

@@ -122,8 +122,8 @@ class EpidemicVaccination(BaseEnv):
         Return the total number of people in the 3 neo-groups (S compartment only)
         """
         a = ['0-4', '5-9', '10-14', '15-19']
-        b = ['20-24', '25-29', '30-34', '35-39', '40-44', '45-49', '50-54']
-        c = ['55-59', '60-64', '65-69',  '70-74', '75+']
+        b = ['20-24', '25-29', '30-34', '35-39', '40-44', '45-49', '50-54', '55-59', '60-64']
+        c = ['65-69',  '70-74', '75+']
         threshold_groups = []
         sumA, sumB, sumC = 0, 0, 0
         for i in [0,1,2,3]:
@@ -179,7 +179,6 @@ class EpidemicVaccination(BaseEnv):
             model_states += model_state.tolist()
             self.model_state = self.model._get_current_state()
         return self.model.current_state, self.model.current_internal_params
-        #return self.model.current_state, self.model.current_internal_params, model_states
     
 
     def who_can_vaccinate_3_groups(self):
@@ -238,7 +237,7 @@ class EpidemicVaccination(BaseEnv):
                 sigma[k] = 0
         for f in range(16):
             size = sum([self.model.current_state[self.model._age_groups[f]]['{}'.format(s)] for s in popGrp])
-            if self.model.dCV1[f]/size >= self.model.coverage_threshold[f]/0.8944:
+            if self.model.dCV1[f]/size >= 1/0.8944:#self.model.coverage_threshold[f]/0.8944:
                 sigma[f] = 0
         return sigma
 
@@ -274,7 +273,7 @@ class EpidemicVaccination(BaseEnv):
         dcv1, threshold = self.get_dcv1_and_threshold()
         for f in range(3):
             size = total_pop[f]
-            if dcv1[f]/size >= threshold[f]:
+            if dcv1[f]/size >= 1/0.8944:#threshold[f]/0.8944:
                 sigma[f] = 0
         return sigma
         
@@ -413,6 +412,9 @@ class EpidemicVaccination(BaseEnv):
             self.model.current_internal_params['sigma'][j] = sigma[1]
         for j in [13, 14, 15]:
             self.model.current_internal_params['sigma'][j] = sigma[2]
+        if self.model.t > 670:
+            for j in range(16):
+               self.model.current_internal_params['sigma'][j] = 0 
 
 
     def step(self, action):
@@ -437,7 +439,7 @@ class EpidemicVaccination(BaseEnv):
 
         """
         if isinstance(action, np.ndarray):
-            transpose_action = ([0,0,0], [0,0,1], [0,1,0], [1,0,0], [1,1,0], [1,0,1], [0,1,1], [1,1,1])
+            transpose_action = ([0,0,0], [0,0,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1])
             action = transpose_action[action[0]]
         action = list(action)
         self.update_with_action(action)
@@ -484,13 +486,13 @@ class EpidemicVaccination(BaseEnv):
                                                                                    action=action,
                                                                                    others=dict(jump_of=self.jump_of))
         costs = costs.flatten()
-        # print(action)
         self.history['aggregated_costs'] += [cost_aggregated / self.jump_of] * self.jump_of
-        self.history['costs'] += [costs / self.jump_of for _ in range(self.jump_of)]
+        self.history['costs'] += n_deaths#[costs / self.jump_of for _ in range(self.jump_of)]
         if self.t >= self.simulation_horizon:
             done = 1
         else:
             done = 0
+        print(n_deaths)
         return self._normalize_env_state(self.env_state), cost_aggregated, done, dict(costs=costs)
 
     # Utils
@@ -541,10 +543,14 @@ if __name__ == '__main__':
                     model=model,
                     simulation_horizon=simulation_horizon)
     env.reset()
-    env.model.current_state, env.model.current_internal_params = env.initialize_model_for_vaccine()
 
+    model_states = []
+    env.model.current_state, env.model.current_internal_params = env.initialize_model_for_vaccine()
     # Actions
-    actions = ([0,0,1], [0,0,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1])
+    actions = ([0,0,1], [0,0,1], [0,1,1], [0,1,1], [0,0,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1])
+    #actions = ([0,0,1], [0,0,1], [0,0,1], [0,1,1],[1,0,1], [1,1,1], [1,1,1], [1,1,1], [1,1,1], [0,1,1], [1,1,1], [1,1,0])
+    #actions = ([0,0,0], [0,0,0], [0,0,0], [0,0,0],[0,0,0], [0,0,0], [0,0,0], [0,0,0], [0,0,0], [0,0,0], [0,0,0], [0,0,0])
+
     t = 0
     r = 0
     done = False
@@ -555,8 +561,37 @@ if __name__ == '__main__':
         done = out[2]
     stats = env.unwrapped.get_data()
     # Plot
-    time = np.arange(simulation_horizon+1)
-    plot_preds(t=time,states=np.array(stats['history']['model_states']).transpose()[23], title="Vaccination sur 3 groupes (0-19, 20-54, 55+) selon la politique réelle")
-    #plt.plot(np.arange(simulation_horizon),np.array(stats['history']['costs']))
+    #print(np.concatenate(np.array(modelstate), np.array(stats['history']['model_states']), axis=0))
+    time = np.arange(731-370)
+    #stats['history']['model_states'].pop(0)
+    # print(stats['history']['aggregated_costs'])
+    # print("")
+    # print(stats['history']['deaths'])
+    #new = 
+    #print(new)
+    #plot_preds(t=np.arange(732),states=np.concatenate((np.array(model_states), np.array(stats['history']['model_states']))).transpose()[23], title="Évolution de la proportion d'individus vaccinés par classe d'âge avec une dose de vaccin (en %)")
+    plt.plot(np.arange(simulation_horizon),np.array(stats['history']['deaths']))
+    plt.axvline(x=0, label='Début de la campagne vaccinale', color='red', linewidth=1, linestyle='--')
+    plt.axvline(x=631-370, label='Fin de la première dose', linewidth=1, linestyle='--')
+    plt.legend()
     #plt.title("Non-cumulative cost function (number of death each month)")
-    #plt.show()
+    plt.show()
+
+
+    jiji = []
+    for i in np.concatenate((np.array(model_states), np.array(stats['history']['model_states']))):
+        tot = 0
+        for j in i:
+            tot += j[32]
+        jiji.append(tot/16)
+    # #print(sum(stats['history']['deaths'])/len(stats['history']['deaths'])*12)
+    plt.plot(time, jiji, label='I$_3 + $I$_4$')
+    plt.plot(np.linspace(142, 527, (516-131)), (np.array(get_incidence())), label='Données SIDEP')
+    plt.axvline(x=370, label='Début de la campagne vaccinale', color='red', linewidth=1, linestyle='--')
+    plt.axvline(x=631, label='Fin de la première dose', linewidth=1, linestyle='--')
+    plt.axvline(x=527, label='Absence de données réelles', color="green", linewidth=1, linestyle='--')
+    plt.xlabel("Temps (en jours)")
+    plt.ylabel(r'Nombre de personnes hospitalisées')
+    plt.legend()
+    plt.title("Évolution du nombre de cas incident modérés et sévères (I$_3$ + I$_4$) de COVID-19 avec vaccination (50 scénarios)")
+    plt.show()

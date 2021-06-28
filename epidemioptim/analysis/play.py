@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 from epidemioptim.utils import plot_stats, get_repo_path, setup_for_replay, plot_preds
 
-NB_EPISODES = 1
+NB_EPISODES = 10
 FOLDER = get_repo_path() + "data/results/EpidemicVaccination-v0/"
 SAVE = True
 

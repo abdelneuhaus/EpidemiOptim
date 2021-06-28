@@ -779,8 +779,9 @@ def plot_preds(t, states, title):
     plt.plot(t, states[15], color='olive', label='75+')
     plt.axvline(x=370, label='Début de la campagne vaccinale', color='red', linewidth=1, linestyle='--')
     plt.axvline(x=631, label='Fin de la première dose', linewidth=1, linestyle='--')
+    #plt.plot(np.linspace(142, 527, (516-131)), (np.array(get_incidence())), label='Données SIDEP')
     plt.xlabel("Temps (en jours)")
-    plt.ylabel(r'Nombre de personnes hospitalisées (I$_4$)')
+    plt.ylabel(r'Nombre de personnes vaccinées (somme des V$^1$)')
     plt.legend()
     plt.title(title)
     plt.show()
@@ -859,7 +860,7 @@ def setup_for_replay(folder, seed=np.random.randint(1e6), deterministic_model=Fa
     # if params['algo_id'] == 'NGSA':
     #     algorithm.load_model(folder + 'res_eval.pk')
     # else:
-    algorithm.load_model(folder + 'models/best_model.cp')
+    algorithm.load_model(folder + 'models/policy_14.cp')
 
     return algorithm, cost_function, env, params
 
