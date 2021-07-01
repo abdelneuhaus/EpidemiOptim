@@ -457,8 +457,8 @@ class HeffernanOdeModel16(BaseModel):
             self.current_internal_params['A'], self.current_internal_params['c'] = np.array(A_c[0]), A_c[1]
             self.current_internal_params['nu'] = nu_value(self.t)
             if self.t > 369:
-            #     sigma = self.compute_sigma()
-            #     self.current_internal_params['sigma'] = np.array(sigma)
+                # sigma = self.compute_sigma()
+                # self.current_internal_params['sigma'] = np.array(sigma)
                 self.current_internal_params['sigma2'] = np.array(duplicate_data(1/42, 16))
                 self.vacStep += 1
             self.step += 1

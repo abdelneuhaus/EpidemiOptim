@@ -50,7 +50,7 @@ class EpidemicVaccinationMultiGroups(BaseEnv):
         self.label_to_id = dict(zip(self.state_labels, np.arange(len(self.state_labels))))
         # To modify
         self.factors = np.repeat(np.array(self.model._pop_size.tolist()), 32)
-        self.normalization_factors = [self.factors.tolist()+ [1,1,1,1,1,1, 67063703]][0]
+        self.normalization_factors = [self.factors.tolist()+ [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,67063703]][0]
 
 
         super().__init__(cost_function=cost_function,
@@ -272,7 +272,7 @@ class EpidemicVaccinationMultiGroups(BaseEnv):
         self.count_since_start_politic = 0
         self.count_since_last_politic = 0
 
-        self.vaccination_politic = [0,0,1]
+        self.vaccination_politic = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1]
         self.previous_politic = self.vaccination_politic
         self.cumulative_costs = [0 for _ in range(self.nb_costs)]
 
@@ -303,7 +303,7 @@ class EpidemicVaccinationMultiGroups(BaseEnv):
         
         # Translate actions
         self.previous_politic = self.vaccination_politic
-        for i in range(3):
+        for i in range(16):
             if action[i] == 0:
                 # no vaccination
                 self.jump_of = min(self.time_resolution, self.simulation_horizon - self.t)
