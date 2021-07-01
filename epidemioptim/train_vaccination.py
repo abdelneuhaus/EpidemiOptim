@@ -39,7 +39,6 @@ def train(config, expe_name, trial_id):
 
     # Get cost function
     cost_function = get_cost_function(cost_function_id=params['cost_id'], params=params['cost_params'])
-    #cost_function = get_cost_function(cost_function_id=params['cost_id'], params=params['cost_params'])
 
     # Create the optimization problem as a Gym-like environment
     env = get_env(env_id=params['env_id'],

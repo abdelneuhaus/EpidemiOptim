@@ -1,0 +1,31 @@
+---------------
+Episode: 50.00
+	Best score so far: 54.67
+	Eval score: 54.67
+	Loss 1: 0.65
+	Loss 2: 1.29
+	Train, Cost 1: 38782.79
+	Train, Cost 2: 61.10
+	Train, Aggregated cost: 60.38
+	Eval, g: 0.5, C1: 44622.83 +/- 2145.35, C2: 40.69 +/- 3.40, Agg: 54.67 +/- 54.67
+	---------------
+Episode: 100.00
+	Best score so far: 41.53
+	Eval score: 41.53
+	Loss 1: 0.21
+	Loss 2: 1.10
+	Train, Cost 1: 44489.05
+	Train, Cost 2: 35.41
+	Train, Aggregated cost: 51.93
+	Eval, g: 0.5, C1: 45476.84 +/- 2861.03, C2: 13.09 +/- 2.80, Agg: 41.53 +/- 41.53
+	---------------
+Episode: 150.00
+	Best score so far: 41.53
+	Eval score: 45.55
+	Loss 1: 0.23
+	Loss 2: 1.41
+	Train, Cost 1: 47921.22
+	Train, Cost 2: 46.35
+	Train, Aggregated cost: 60.04
+	Eval, g: 0.5, C1: 52482.96 +/- 2394.08, C2: 10.36 +/- 1.52, Agg: 45.55 +/- 45.55
+	

@@ -1,17 +1,18 @@
 import numpy as np
 import gym
 import math
+import itertools
 from epidemioptim.environments.gym_envs.base_env import BaseEnv
 from epidemioptim.utils import *
 np.warnings.filterwarnings('ignore', category=np.VisibleDeprecationWarning)
 
-class EpidemicVaccination(BaseEnv):
+class EpidemicVaccinationMultiGroups(BaseEnv):
     def __init__(self,
                  cost_function,
                  model,
                  simulation_horizon,
-                 ratio_death_to_R=0.0001,  # death ratio among people who were infected
-                 time_resolution=30,
+                 ratio_death_to_R=0.0016,  # death ratio among people who were infected
+                 time_resolution=15,
                  seed=np.random.randint(1e6)
                  ):
         """
@@ -55,7 +56,7 @@ class EpidemicVaccination(BaseEnv):
         super().__init__(cost_function=cost_function,
                          model=model,
                          simulation_horizon=simulation_horizon,
-                         dim_action=8,
+                         dim_action=65536,
                          discrete=True,
                          seed=seed)
 
@@ -70,6 +71,8 @@ class EpidemicVaccination(BaseEnv):
         self.vaccine_groups = self.get_S_pop_vaccine_groups()
         self.vaccination_current_politic = self.who_can_vaccinate_3_groups()
         self.coverage_goals = [1.36, 2.50, 9.90, 16.40, 27.79, 34.30, 45.68, 52.19, 63.58, 63.58, 63.58]
+        self._transpose = list(itertools.product([0, 1], repeat=16))
+        self.transpose_actions = tuple(np.array(self._transpose).tolist())
 
 
 
@@ -77,21 +80,14 @@ class EpidemicVaccination(BaseEnv):
         """
         Return the total number of people in the 3 neo-groups (S compartment only)
         """
-        a = ['0-4', '5-9', '10-14', '15-19']
-        b = ['20-24', '25-29', '30-34', '35-39', '40-44', '45-49', '50-54', '55-59', '60-64']
-        c = ['65-69',  '70-74', '75+']
+        a = ['0-4', '5-9', '10-14', '15-19','20-24', '25-29', '30-34', '35-39', '40-44', '45-49', '50-54', '55-59', '60-64','65-69',  '70-74', '75+']
         classes = ['S1', 'S2', 'S3', 'S4']
         vaccine_groups = []
-        sumA, sumB, sumC = 0, 0, 0
         for i in a:
-            sumA += sum([self.model.current_state[i]['{}'.format(s)] for s in classes])
-        for i in b:
-            sumB += sum([self.model.current_state[i]['{}'.format(s)] for s in classes])
-        for i in c:
-            sumC += sum([self.model.current_state[i]['{}'.format(s)] for s in classes])
-        vaccine_groups.append(sumA)
-        vaccine_groups.append(sumB)
-        vaccine_groups.append(sumC)
+            sumA = 0
+            sumA = sum([self.model.current_state[i]['{}'.format(s)] for s in classes])
+            vaccine_groups.append(sumA)
+        print(vaccine_groups)
         return vaccine_groups
 
 
@@ -99,61 +95,26 @@ class EpidemicVaccination(BaseEnv):
         """
         Return the total number of people in the 3 neo-groups (S compartment only)
         """
-        a = ['0-4', '5-9', '10-14', '15-19']
-        b = ['20-24', '25-29', '30-34', '35-39', '40-44', '45-49', '50-54', '55-59', '60-64']
-        c = ['65-69',  '70-74', '75+']
+        a = ['0-4', '5-9', '10-14', '15-19','20-24', '25-29', '30-34', '35-39', '40-44', '45-49', '50-54', '55-59', '60-64','65-69',  '70-74', '75+']
         classes = ['S1', 'S2', 'S3', 'S4', 'E21', 'E22', 'E23', 'E31', 'E32', 'E33', 'E41', 'E42', 
                    'E43', 'V11', 'V21', 'V31', 'V41', 'V12', 'V22', 'V32', 'V42', 'I2', 'I3', 'I4']
         total_pop = []
-        sumA, sumB, sumC = 0, 0, 0
         for i in a:
-            sumA += sum([self.model.current_state[i]['{}'.format(s)] for s in classes])
-        for i in b:
-            sumB += sum([self.model.current_state[i]['{}'.format(s)] for s in classes])
-        for i in c:
-            sumC += sum([self.model.current_state[i]['{}'.format(s)] for s in classes])
-        total_pop.append(sumA)
-        total_pop.append(sumB)
-        total_pop.append(sumC)
+            sumA = 0
+            sumA = sum([self.model.current_state[i]['{}'.format(s)] for s in classes])
+            total_pop.append(sumA)
         return total_pop
 
     def get_dcv1_and_threshold(self):
         """
         Return the total number of people in the 3 neo-groups (S compartment only)
         """
-        a = ['0-4', '5-9', '10-14', '15-19']
-        b = ['20-24', '25-29', '30-34', '35-39', '40-44', '45-49', '50-54', '55-59', '60-64']
-        c = ['65-69',  '70-74', '75+']
-        threshold_groups = []
-        sumA, sumB, sumC = 0, 0, 0
-        for i in [0,1,2,3]:
-            sumA += self.model.coverage_threshold[i]
-        sumA /= 4
-        for i in [4,5,6,7,8,9,10, 11, 12]:
-            sumB += self.model.coverage_threshold[i]
-        sumB /= 7
-        for i in [13,14,15]:
-            sumC += self.model.coverage_threshold[i]
-        sumC /= 5
-        sumA /= 0.8944
-        sumB /= 0.8944
-        sumC /= 0.8944
-        threshold_groups.append(sumA)
-        threshold_groups.append(sumB)
-        threshold_groups.append(sumC)   
-
+        threshold_groups = self.model.coverage_threshold  
         dcv1_groups = []
-        sumA, sumB, sumC = 0, 0, 0
-        for i in [0,1,2,3]:
-            sumA += self.model.dCV1[i]
-        for i in [4,5,6,7,8,9,10, 11, 12]:
-            sumB += self.model.dCV1[i]
-        for i in [13,14,15]:
-            sumC += self.model.dCV1[i]
-        dcv1_groups.append(sumA)
-        dcv1_groups.append(sumB)
-        dcv1_groups.append(sumC)
+        for i in range(16):
+            dcv1_groups.append(self.model.dCV1[i])
         return dcv1_groups, threshold_groups
+
 
     def _compute_delta_coverage(self):
         maxcoverage = [x*100 for x in self.model._vaccination_coverage]
@@ -202,9 +163,8 @@ class EpidemicVaccination(BaseEnv):
             vaccination_program.append(tmp)
         return np.array(vaccination_program)
 
-        
 
-    def compute_sigma_no_action(self):
+    def compute_sigma_with_action(self, action):
         mwl = self.model.mitigation_windows[self.model.step-1]
         lowVP = 1
         pi = lowVP*(self.model.vaccination_coverage[self.model.vacStep]/100)
@@ -214,67 +174,25 @@ class EpidemicVaccination(BaseEnv):
         wcv, Ntot = 0, 0
         for n in range(16):
             Ntot += sum([self.model.current_state[self.model._age_groups[n]]['{}'.format(s)] for s in popGrp])
-        for n in range(3):
-            if self.vaccination_current_politic[self.model.vacStep][n] == 1:
-                wcv += self.vaccine_groups[n]
-        g = (pi*Ntot/wcv)
-        if g>1:
-            g=1
-        sig = 1/mwl*(-math.log(1-g))
-        for k in range(3):
-            if self.vaccination_current_politic[self.model.vacStep][k] == 1:
-                if k == 0:
-                    for i in [0, 1, 2, 3]:
-                        sigma[i] = sig
-                elif k == 1:
-                    for i in [4, 5, 6, 7, 8, 9, 10, 11, 12]:
-                        sigma[i] = sig
-                elif k == 2:
-                    for i in [13, 14, 15]:
-                        sigma[i] = sig
-        for k in range(16):
-            if sigma[k] < 0:
-                sigma[k] = 0
-        for f in range(16):
-            size = sum([self.model.current_state[self.model._age_groups[f]]['{}'.format(s)] for s in popGrp])
-            if self.model.dCV1[f]/size >= 1/0.8944:#self.model.coverage_threshold[f]/0.8944:
-                sigma[f] = 0
-        return sigma
-
-
-    def compute_sigma_with_action(self, action):
-        mwl = self.model.mitigation_windows[self.model.step-1]
-        lowVP = 1
-        pi = lowVP*(self.model.vaccination_coverage[self.model.vacStep]/100)
-        popGrp = ['S1', 'S2', 'S3', 'S4', 'E21', 'E22', 'E23', 'E31', 'E32', 'E33', 'E41', 'E42', 
-                  'E43', 'V11', 'V21', 'V31', 'V41', 'V12', 'V22', 'V32', 'V42', 'I2', 'I3', 'I4']
-        sigma = [0, 0, 0]
-        wcv, Ntot = 0, 0
         for n in range(16):
-            Ntot += sum([self.model.current_state[self.model._age_groups[n]]['{}'.format(s)] for s in popGrp])
-        for n in range(3):
             if action[n] == 1:
-                wcv += self.vaccine_groups[n]
+                wcv += self.get_S_pop_vaccine_groups()[n]
         g = (pi*Ntot/wcv)
         if g>1:
             g=0.99999999
         sig = 1/mwl*(-math.log(1-g))
-        for k in range(3):
+        for k in range(16):
             if action[k] == 1:
-                if k == 0:
-                    sigma[k] = sig
-                elif k == 1:
-                    sigma[k] = sig
-                elif k == 2:
-                    sigma[k] = sig
+                sigma[k] = sig
             if sigma[k] < 0:
                 sigma[k] = 0
         total_pop = self.get_total_pop_vaccine_groups()
         dcv1, threshold = self.get_dcv1_and_threshold()
-        for f in range(3):
+        for f in range(16):
             size = total_pop[f]
-            if dcv1[f]/size >= 1/0.8944:#threshold[f]/0.8944:
+            if dcv1[f]/size >= threshold[f]/0.8944:
                 sigma[f] = 0
+        print(sigma)
         return sigma
         
 
@@ -406,12 +324,7 @@ class EpidemicVaccination(BaseEnv):
 
         # Modify model parameters based on state
         sigma = self.compute_sigma_with_action(action)
-        for j in [0, 1, 2, 3]:
-            self.model.current_internal_params['sigma'][j] = sigma[0]
-        for j in [4, 5, 6, 7, 8, 9, 10, 11, 12]:
-            self.model.current_internal_params['sigma'][j] = sigma[1]
-        for j in [13, 14, 15]:
-            self.model.current_internal_params['sigma'][j] = sigma[2]
+        self.model.current_internal_params['sigma'] = np.array(sigma)
         if self.model.t > 670:
             for j in range(16):
                self.model.current_internal_params['sigma'][j] = 0 
@@ -439,15 +352,14 @@ class EpidemicVaccination(BaseEnv):
 
         """
         if isinstance(action, np.ndarray):
-            transpose_action = ([0,0,0], [0,0,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1])
-            action = transpose_action[action[0]]
+            action = self.transpose_actions[action[0]]
         action = list(action)
         self.update_with_action(action)
         
         # Run model for jump_of steps
         model_state = [self.model_state]
         model_states = []
-        for i in range(30):
+        for i in range(15):
             model_state = self.model.run_n_steps(model_state[-1], 1)
             model_states += model_state.tolist()
         self.model_state = model_state[-1]  # last internal state is the new current one
@@ -475,7 +387,7 @@ class EpidemicVaccination(BaseEnv):
         self.history['env_timesteps'] += list(range(self.t - self.jump_of, self.t))
         self.history['model_states'] += model_states
         self.history['vaccinations'] += [self.vaccination_politic] * self.jump_of
-        self.history['deaths'] += [n_deaths / self.jump_of] * self.jump_of
+        self.history['deaths'] += [n_deaths] * self.jump_of#[n_deaths / self.jump_of] * self.jump_of
 
         # Compute cost_function
         self.history['costs'] += [costs[0] / self.jump_of for _ in range(self.jump_of)]
@@ -535,9 +447,9 @@ if __name__ == '__main__':
     from epidemioptim.environments.models import get_model
 
     simulation_horizon = 360
-    model = get_model(model_id='heffernan_model', params=dict(stochastic=False))
-    cost_func = get_cost_function(cost_function_id='one_cost_death_toll', params=dict(ratio_death_to_R=0.0001))
-    env = gym.make('EpidemicVaccination-v0',
+    model = get_model(model_id='heffernan_model_mg', params=dict(stochastic=False))
+    cost_func = get_cost_function(cost_function_id='one_cost_death_toll', params=dict(ratio_death_to_R=0.0016))
+    env = gym.make('EpidemicVaccination-v1',
                     cost_function=cost_func,
                     model=model,
                     simulation_horizon=simulation_horizon)
@@ -546,9 +458,42 @@ if __name__ == '__main__':
     model_states = []
     env.model.current_state, env.model.current_internal_params = env.initialize_model_for_vaccine()
     # Actions
-    actions = ([0,0,1], [0,0,1], [0,1,1], [0,1,1], [0,0,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1], [0,1,1])
-    #actions = ([0,0,1], [0,0,1], [0,0,1], [0,1,1],[1,0,1], [1,1,1], [1,1,1], [1,1,1], [1,1,1], [0,1,1], [1,1,1], [1,1,0])
-    #actions = ([0,0,0], [0,0,0], [0,0,0], [0,0,0],[0,0,0], [0,0,0], [0,0,0], [0,0,0], [0,0,0], [0,0,0], [0,0,0], [0,0,0])
+    # actions = ([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1], 
+    #            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1], 
+    #            [0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1], 
+    #            [0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1], 
+    #            [0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1], 
+    #            [0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1], 
+    #            [0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1], 
+    #            [0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1], 
+    #            [0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1], 
+    #            [0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1], 
+    #            [0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1], 
+    #            [0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1])
+    actions = ([0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1], 
+               [0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1], 
+               [0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1], 
+               [0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1], 
+               [0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1], 
+               [0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1], 
+               [0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1], 
+               [0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1], 
+               [0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1], 
+               [0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1], 
+               [0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1], 
+               [0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1], 
+               [0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1], 
+               [0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1], 
+               [0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1], 
+               [0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1], 
+               [0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1], 
+               [0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1], 
+               [0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1], 
+               [0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1], 
+               [0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1], 
+               [0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1], 
+               [0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1], 
+               [0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1])
 
     t = 0
     r = 0
@@ -568,7 +513,7 @@ if __name__ == '__main__':
     # print(stats['history']['deaths'])
     #new = 
     #print(new)
-    #plot_preds(t=np.arange(732),states=np.concatenate((np.array(model_states), np.array(stats['history']['model_states']))).transpose()[23], title="Évolution de la proportion d'individus vaccinés par classe d'âge avec une dose de vaccin (en %)")
+    plot_preds(t=np.arange(732-371),states=np.array(stats['history']['model_states']).transpose()[23], title="Évolution de la proportion d'individus vaccinés par classe d'âge avec une dose de vaccin (en %)")
     plt.plot(np.arange(simulation_horizon),np.array(stats['history']['deaths']))
     plt.axvline(x=0, label='Début de la campagne vaccinale', color='red', linewidth=1, linestyle='--')
     plt.axvline(x=631-370, label='Fin de la première dose', linewidth=1, linestyle='--')
@@ -577,20 +522,20 @@ if __name__ == '__main__':
     plt.show()
 
 
-    jiji = []
-    for i in np.concatenate((np.array(model_states), np.array(stats['history']['model_states']))):
-        tot = 0
-        for j in i:
-            tot += j[32]
-        jiji.append(tot/16)
-    # #print(sum(stats['history']['deaths'])/len(stats['history']['deaths'])*12)
-    plt.plot(time, jiji, label='I$_3 + $I$_4$')
-    plt.plot(np.linspace(142, 527, (516-131)), (np.array(get_incidence())), label='Données SIDEP')
-    plt.axvline(x=370, label='Début de la campagne vaccinale', color='red', linewidth=1, linestyle='--')
-    plt.axvline(x=631, label='Fin de la première dose', linewidth=1, linestyle='--')
-    plt.axvline(x=527, label='Absence de données réelles', color="green", linewidth=1, linestyle='--')
-    plt.xlabel("Temps (en jours)")
-    plt.ylabel(r'Nombre de personnes hospitalisées')
-    plt.legend()
-    plt.title("Évolution du nombre de cas incident modérés et sévères (I$_3$ + I$_4$) de COVID-19 avec vaccination (50 scénarios)")
-    plt.show()
+    # jiji = []
+    # for i in np.concatenate((np.array(model_states), np.array(stats['history']['model_states']))):
+    #     tot = 0
+    #     for j in i:
+    #         tot += j[32]
+    #     jiji.append(tot/16)
+    # # #print(sum(stats['history']['deaths'])/len(stats['history']['deaths'])*12)
+    # plt.plot(time, jiji, label='I$_3 + $I$_4$')
+    # plt.plot(np.linspace(142, 527, (516-131)), (np.array(get_incidence())), label='Données SIDEP')
+    # plt.axvline(x=370, label='Début de la campagne vaccinale', color='red', linewidth=1, linestyle='--')
+    # plt.axvline(x=631, label='Fin de la première dose', linewidth=1, linestyle='--')
+    # plt.axvline(x=527, label='Absence de données réelles', color="green", linewidth=1, linestyle='--')
+    # plt.xlabel("Temps (en jours)")
+    # plt.ylabel(r'Nombre de personnes hospitalisées')
+    # plt.legend()
+    # plt.title("Évolution du nombre de cas incident modérés et sévères (I$_3$ + I$_4$) de COVID-19 avec vaccination (50 scénarios)")
+    # plt.show()

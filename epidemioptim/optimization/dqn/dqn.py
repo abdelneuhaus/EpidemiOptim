@@ -221,18 +221,15 @@ class DQN(BaseAlgorithm):
         else:
             state = ag.Variable(torch.FloatTensor(np.float32(state)))
             next_state = ag.Variable(torch.FloatTensor(np.float32(next_state)))
-
         action = ag.Variable(torch.LongTensor(action))
         indices = np.arange(self.batch_size)
 
         rewards = [- ag.Variable(torch.FloatTensor(c_func.scale(c))) for c_func, c in zip(self.cost_function.costs, costs.transpose())]
 
-
         q_preds = self.Q_eval.forward(state)
         q_preds = [q_p[indices, action] for q_p in q_preds]
         q_nexts = self.Q_next.forward(next_state)
         q_evals = self.Q_eval.forward(next_state)
-
         max_actions = [torch.argmax(q_ev, dim=1) for q_ev in q_evals]
 
         q_targets = [r + self.gamma * q_nex[indices, max_act] for r, q_nex, max_act in zip(rewards, q_nexts, max_actions)]

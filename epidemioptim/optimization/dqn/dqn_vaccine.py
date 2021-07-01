@@ -142,23 +142,7 @@ class DQN_vaccine(BaseAlgorithm):
         # This network learns to estimate the number of times the constraint will be violated in the future.
         # We then use it to guide action selection, selecting the action that does not violate the constraint when the other does,
         # or the action that minimizes constraint violation when both action lead to constraint violations.
-        if self.use_constraints:
-            self.nb_constraints = len(self.cost_function.constraints_ids)
-            self.Q_eval_constraints = Critic(n_critics=self.nb_constraints,
-                                             dim_state=self.dims['s'],
-                                             dim_goal=self.goal_dim,
-                                             dim_actions=self.dims['a'],
-                                             goal_ids=self.cost_function.constraints_ids,
-                                             layers=self.layers)
-            self.Q_next_constraints = Critic(n_critics=self.nb_constraints,
-                                             dim_state=self.dims['s'],
-                                             dim_goal=self.goal_dim,
-                                             dim_actions=self.dims['a'],
-                                             goal_ids=self.cost_function.constraints_ids,
-                                             layers=self.layers)
-            self.optimizers_constraints = [optim.Adam(q.parameters(), lr=self.algo_params['lr']) for q in self.Q_eval_constraints.qs]
-        else:
-            self.nb_constraints = 0
+        self.nb_constraints = 0
 
         # Initialize counters
         self.learn_step_counter = 0
@@ -174,9 +158,7 @@ class DQN_vaccine(BaseAlgorithm):
         """
         if self.replace_target_cnt is not None and self.learn_step_counter % self.replace_target_cnt == 0:
             self.Q_next.set_goal_params(self.Q_eval.get_params())
-        if self.use_constraints:
-            if self.replace_target_cnt is not None and self.learn_step_counter % self.replace_target_cnt == 0:
-                self.Q_next_constraints.set_goal_params(self.Q_eval_constraints.get_params())
+        
 
     def _update(self, batch_size):
         """
@@ -201,10 +183,6 @@ class DQN_vaccine(BaseAlgorithm):
         for opt in self.optimizers:
             opt.zero_grad()
 
-        if self.use_constraints:
-            for opt in self.optimizers_constraints:
-                opt.zero_grad()
-
         # Update target network.
         self._replace_target_network()
 
@@ -213,6 +191,7 @@ class DQN_vaccine(BaseAlgorithm):
 
         # Concatenate goal if the policy is goal conditioned (might not be used afterwards).
         state = ag.Variable(torch.FloatTensor(np.float32(state)))
+        #print("state", state)
         next_state = ag.Variable(torch.FloatTensor(np.float32(next_state)))
         action = ag.Variable(torch.LongTensor(action))
         indices = np.arange(self.batch_size)
@@ -225,7 +204,7 @@ class DQN_vaccine(BaseAlgorithm):
         q_evals = self.Q_eval.forward(next_state)
 
         max_actions = [torch.argmax(q_ev, dim=1) for q_ev in q_evals]
-        # print(q_preds, q_nexts, q_evals)
+        #print(q_preds, q_nexts, q_evals)
         q_targets = [r + self.gamma * q_nex[indices, max_act] for r, q_nex, max_act in zip(rewards, q_nexts, max_actions)]
         losses = [(q_pre - ag.Variable(q_targ.data)).pow(2).mean() for q_pre, q_targ in zip(q_preds, q_targets)]
         for loss in losses:
@@ -424,7 +403,6 @@ class DQN_vaccine(BaseAlgorithm):
         new_logs['Eval score'] = np.mean(costs)
         new_logs['Eval, g: ' + str([]) + ': ' + 'mean_agg'] = np.mean(aggregated_costs)
         new_logs['Eval, g: ' + str([]) + ': ' + 'std_agg'] = np.mean(aggregated_costs)
-
         return new_logs, costs
 
     def log(self, episode, new_logs, losses, train_agg_cost, train_costs):
