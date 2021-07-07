@@ -184,6 +184,8 @@ class HeffernanOdeModel16(BaseModel):
         self.dCV1 = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         self.dCV2 = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         self.vacStep = 0
+        self.newstep = 0
+        self.nbrConf = 0
         
         # Tracking variables
         self.step = 0
@@ -267,7 +269,8 @@ class HeffernanOdeModel16(BaseModel):
                                         
 
     def reset(self, delay=None) -> None:
-        """Resets the model parameters, and state, add delay.
+        """
+        Resets the model parameters, and state, add delay.
 
         Parameters
         ----------
@@ -351,7 +354,7 @@ class HeffernanOdeModel16(BaseModel):
                 if i in ['20-24', '25-29', '30-34', '35-39', '40-44', '45-49']:
                     self.initial_state[i]['I20'] = 10/6
                     self.initial_state[i]['I30'] = 1/6
-        # S10 is computed from other states, as the sum of all states equals the population size N
+            # S10 is computed from other states, as the sum of all states equals the population size N
             self.initial_state[i]['S10'] = self.pop_size[i] - np.sum([self.initial_state[i]['{}0'.format(s)] for s in self.internal_states_labels[1:]])
 
 
@@ -423,7 +426,31 @@ class HeffernanOdeModel16(BaseModel):
         if self.t > 670:
             return [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         return sigma
-            
+    
+    def politic_decision_module(self):
+        # A CHAQUE EPISODE (TOUS LES 15 JOURS)
+        for f in range(16):
+            total_I4 = sum([self.current_state[self._age_groups[f]]['I4']])
+        if total_I4 > 90000:
+            if self.t > 531:
+                if self.t < 609:
+                   self.newstep = 19 
+            self.k = 0.35
+            self.newstep = 4
+            self.nbrConf += 1
+            print(self.t, self.nbrConf)
+        elif total_I4 < 90000:
+            if self.t > 531:
+                if self.t < 609:
+                    self.k = 0.8
+                    self.newstep = 27
+                elif self.t > 609:
+                    self.k = 0.6
+                    self.newstep = 22
+            else:
+                self.k = 0.6
+                self.newstep = 22
+        
 
     def run_n_steps(self, current_state=None, n=1, labelled_states=False):
         """
@@ -457,9 +484,13 @@ class HeffernanOdeModel16(BaseModel):
             self.current_internal_params['A'], self.current_internal_params['c'] = np.array(A_c[0]), A_c[1]
             self.current_internal_params['nu'] = nu_value(self.t)
             if self.t > 369:
-                # sigma = self.compute_sigma()
-                # self.current_internal_params['sigma'] = np.array(sigma)
+                sigma = self.compute_sigma()
+                self.current_internal_params['sigma'] = np.array(sigma)
                 self.current_internal_params['sigma2'] = np.array(duplicate_data(1/42, 16))
+                self.k = k_value(self.t)
+                self.politic_decision_module()
+                A_c = calculate_A_and_c(self.newstep, self.k, self.contact_modifiers, self.perturbations_matrices, self.transition_matrices)
+                self.current_internal_params['A'], self.current_internal_params['c'] = np.array(A_c[0]), A_c[1]
                 self.vacStep += 1
             self.step += 1
 
@@ -468,6 +499,7 @@ class HeffernanOdeModel16(BaseModel):
         self._set_current_state(current_state=z[-1].copy())  # save new current state
         self.t += 1
         self.current_state = self.convert_states(self.current_state)
+        print(self.nbrConf)
         # format results
         if labelled_states:
             return self._convert_to_labelled_states(np.atleast_2d(z[1:]))
@@ -489,24 +521,24 @@ if __name__ == '__main__':
     
     # Plot
     time = np.arange(simulation_horizon)
-    plot_preds(t=time,states=np.array(model_states).transpose()[23], title="Évolution du nombre de cas incident sévères (I$_4$) de COVID-19 avec vaccination")
+    #plot_preds(t=time,states=np.array(model_states).transpose()[23], title="Évolution du nombre de cas incident sévères (I$_4$) de COVID-19 avec vaccination")
     # popost = 0
     # for i in range(0, 24):
     #     popost += sum(model_state.transpose()[i])
     # print(popost)
-    # jiji = []
-    # for i in model_states:
-    #     tot = 0
-    #     for j in i:
-    #         tot += j[32]
-    #     jiji.append(tot/16)
-    # plt.plot(time, np.array(jiji), label='I$3$ + I$_4$')
+    jiji = []
+    for i in model_states:
+        tot = 0
+        for j in i:
+            tot += j[23]
+        jiji.append(tot)
+    plt.plot(time, np.array(jiji), label='I$_4$')
     # plt.plot(np.linspace(142, 527, (516-131)), (np.array(get_incidence())), label='Données SIDEP')
-    # plt.axvline(x=370, label='Début de la campagne vaccinale', color='red', linewidth=1, linestyle='--')
-    # plt.axvline(x=631, label='Fin de la première dose', linewidth=1, linestyle='--')
+    plt.axvline(x=370, label='Début de la campagne vaccinale', color='red', linewidth=1, linestyle='--')
+    plt.axvline(x=631, label='Fin de la première dose', linewidth=1, linestyle='--')
     # plt.axvline(x=527, label='Absence de données réelles', color="green", linewidth=1, linestyle='--')
-    # plt.xlabel("Temps (en jours)")
-    # plt.ylabel(r'Nombre de personnes hospitalisées')
-    # plt.legend()
+    plt.xlabel("Temps (en jours)")
+    plt.ylabel(r'Nombre de personnes hospitalisées')
+    plt.legend()
     # plt.title("Évolution du nombre de cas incident modérés et sévères (I$_3$ + I$_4$) de COVID-19 avec vaccination")
-    # plt.show()
+    plt.show()
