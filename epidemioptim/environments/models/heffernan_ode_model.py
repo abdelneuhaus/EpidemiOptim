@@ -398,6 +398,7 @@ class HeffernanOdeModel(BaseModel):
         mwl = self.mitigation_windows[self.step]
         lowVP = 1
         pi = lowVP*(self.vaccination_coverage[self.vacStep]/100)
+        print(self.vaccination_coverage)
         classes = ['S1', 'S2', 'S3', 'S4']
         popGrp = ['S1', 'S2', 'S3', 'S4', 'E21', 'E22', 'E23', 'E31', 'E32', 'E33', 'E41', 'E42', 
                   'E43', 'V11', 'V21', 'V31', 'V41', 'V12', 'V22', 'V32', 'V42', 'I2', 'I3', 'I4']
@@ -456,8 +457,8 @@ class HeffernanOdeModel(BaseModel):
             self.current_internal_params['A'], self.current_internal_params['c'] = np.array(A_c[0]), A_c[1]
             self.current_internal_params['nu'] = nu_value(self.t)
             if self.t > 369:
-                # sigma = self.compute_sigma()
-                # self.current_internal_params['sigma'] = np.array(sigma)
+                sigma = self.compute_sigma()
+                self.current_internal_params['sigma'] = np.array(sigma)
                 self.current_internal_params['sigma2'] = np.array(duplicate_data(1/28, 16))
                 self.vacStep += 1
             self.step += 1
@@ -480,7 +481,7 @@ if __name__ == '__main__':
     labels = ['0-4', '5-9', '10-14', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44', '45-49', '50-54', '55-59', '60-64', '65-69',  '70-74', '75+']
 
     # Run simulation
-    simulation_horizon = 731
+    simulation_horizon = 371#731
     model_states = []
     for i in range(simulation_horizon):
         model_state = model.run_n_steps()

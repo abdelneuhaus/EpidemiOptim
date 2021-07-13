@@ -5,7 +5,7 @@ from epidemioptim.environments.models.base_model import BaseModel
 from epidemioptim.utils import *
 
 
-PATH_TO_DATA = get_repo_path() + '/data/jane_model_data/ScenarioPlanFranceOne.xlsx'
+PATH_TO_DATA = get_repo_path() + '/data/jane_model_data/ScenarioPlanFranceOne16.xlsx'
 PATH_TO_HOME_MATRIX = get_repo_path() + '/data/jane_model_data/contactHome.txt'
 PATH_TO_SCHOOL_MATRIX = get_repo_path() + '/data/jane_model_data/contactSchool.txt'
 PATH_TO_WORK_MATRIX = get_repo_path() + '/data/jane_model_data/contactWork.txt'
@@ -88,10 +88,18 @@ def vaccination_model(y: tuple,
 
     # Infect calculation
     T = S1 + S2 + S3 + S4 + E21 + E22 + E23 + E31 + E32 + E33 + E41 + E42 + E43 + V11 + V21 + V31 + V41 + V12 + V22 + V32 + V42 + I2 + I3 + I4
-    #print(sum(T))
-    Xm = sum(np.multiply((beta+beta*nu), np.array((I2,I3,I4)).T).T)
+
+    # VOC and infectivity calculation
+    Xm = sum(np.multiply(beta))
     Ym = np.divide(Xm, T)
     infect = np.dot(np.array(c).T, Ym)
+
+    # Protection from severe disease (new qq)
+    qq = 0.3
+    pv2 = [(1-0.5*qq)*p2[1], (1-qq)*p2[2]+1/2*qq*p2[1], qq*p2[2]]
+    pv3 = [0*p2[1], (1-qq)*p3[2]+1/2*qq*p3[1], qq*p3[2]]
+    pv2 = np.array(pv2)
+    pv3 = np.array(pv3)
 
     # Susceptible compartments
     dS1dt = - sum(p1)*alpha[0]*A[0]*S1*infect + omega[1]*S2 - sigma*rho*S1 + omega[1]*V11
@@ -101,23 +109,23 @@ def vaccination_model(y: tuple,
 
     # Exposed compartments
     # To I2
-    dE21dt = p1[0]*alpha[0]*A[0]*S1*infect + p2[0]*alpha[1]*A[1]*S2*infect + 0.3*p2[0]*epsilon*alpha[1]*A[1]*V11*infect - kappa[1]*E21
+    dE21dt = p1[0]*alpha[0]*A[0]*S1*infect + p2[0]*alpha[1]*A[1]*S2*infect + pv2[0]*epsilon*alpha[1]*A[1]*V11*infect - kappa[1]*E21
     dE22dt = kappa[1]*E21 - kappa[2]*E22
     dE23dt = kappa[2]*E22 - kappa[3]*E23
 
     # To I3
-    dE31dt = p1[1]*alpha[0]*A[0]*S1*infect + p2[1]*alpha[1]*A[1]*S2*infect + p3[1]*alpha[2]*A[2]*S3*infect + 0.3*p3[1]*epsilon*alpha[1]*A[1]*V11*infect + 0.3*p3[1]*epsilon*alpha[2]*A[2]*V21*infect - kappa[1]*E31
+    dE31dt = p1[1]*alpha[0]*A[0]*S1*infect + p2[1]*alpha[1]*A[1]*S2*infect + p3[1]*alpha[2]*A[2]*S3*infect + pv2[1]*epsilon*alpha[1]*A[1]*V11*infect + pv3[1]*epsilon*alpha[2]*A[2]*V21*infect - kappa[1]*E31
     dE32dt = kappa[1]*E31 - kappa[2]*E32
     dE33dt = kappa[2]*E32 - kappa[3]*E33
 
     # To I4
-    dE41dt = p1[2]*alpha[0]*A[0]*S1*infect + p2[2]*alpha[1]*A[1]*S2*infect + p3[2]*alpha[2]*A[2]*S3*infect + (0.3*p2[2]+0.7*p3[2])*epsilon*alpha[1]*A[1]*V11*infect + 0.3*p2[2]*epsilon*alpha[2]*A[2]*V21*infect - kappa[1]*E41
+    dE41dt = p1[2]*alpha[0]*A[0]*S1*infect + p2[2]*alpha[1]*A[1]*S2*infect + p3[2]*alpha[2]*A[2]*S3*infect + pv2[2]*epsilon*alpha[1]*A[1]*V11*infect + pv3[2]*epsilon*alpha[2]*A[2]*V21*infect - kappa[1]*E41
     dE42dt = kappa[1]*E41 - kappa[2]*E42
     dE43dt = kappa[2]*E42 - kappa[3]*E43 
 
     # Vaccinated compartments
-    dV11dt = sigma*rho*S1 - sigma2*rho*V11 - sum(p2)*epsilon*alpha[1]*A[1]*V11*infect - omega[1]*V11
-    dV21dt = sigma*rho*S2 - sigma2*rho*V21 - (p3[1]+p3[2])*epsilon*alpha[2]*A[2]*V21*infect - omega[2]*V21
+    dV11dt = sigma*rho*S1 - sigma2*rho*V11 - sum(pv2)*epsilon*alpha[1]*A[1]*V11*infect - omega[1]*V11
+    dV21dt = sigma*rho*S2 - sigma2*rho*V21 - sum(pv3)*epsilon*alpha[2]*A[2]*V21*infect - omega[2]*V21
     dV31dt = sigma*rho*S3 - sigma2*rho*V31 - omega[3]*V31
     dV41dt = sigma*rho*S4 - sigma2*rho*V41 - omega[3]*V41
 
@@ -158,9 +166,10 @@ class HeffernanOdeModel16(BaseModel):
         self._age_groups = ['0-4', '5-9', '10-14', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44', '45-49', '50-54', '55-59', '60-64', '65-69',  '70-74', '75+']
         self._pop_size = pd.read_excel(PATH_TO_DATA, sheet_name='population', skiprows=3, usecols=(2,2))['Unnamed: 2']
         self.pop_size = dict(zip(self._age_groups, (self._pop_size)))
-        self.step_list = [0,71,73,76,91,121,152,153,173,182,185,201,213,239,244,274,290,295,303,305,335,349,353,366,369,370,377,381,384,391,397,398,402,404,
-                          405,409,412,418,419,425,426,431,433,440,447,454,456,459,461,465,468,472,475,481,482,486,488,489,494,496,497,501,503,510,517,524,
-                          552,578,609,639,661,670,677,717,731]
+        self.step_list = [0,71,73,76,91,121,152,153,173,182,185,201,213,239,244,274,290,295,303,305,335,349,353,366,369,370,377,381,384,391,397,398,
+                          402,404,405,409,412,418,419,425,426,431,433,440,447,454,456,459,461,465,468,472,475,481,482,486,488,489,494,496,497,501,503,
+                          510,517,524,531,546,552,578,609,639,661,670,677,717,731,762,768,775,782,789,790,796,821]
+
         # Matrices
         self.p1 = get_text_file_data(PATH_TO_COMORBIDITY_MATRIX)
         self.p2 = get_text_file_data(PATH_TO_COMORBIDITY_MATRIX)
@@ -180,7 +189,7 @@ class HeffernanOdeModel16(BaseModel):
         self.active_vaccination = vaccination_active(PATH_TO_DATA)
         self.mitigation_windows = mitigation_time(self.step_list)
         self.number_doses = [1679218,3008288,6026744,12000000,12000000,12000000,12000000,12000000,12000000,0,0]
-        self.coverage_threshold = [0.5, 0.5, 0.5, 0.6, 0.63, 0.65, 0.66, 0.68, 0.7, 0.74, 0.79, 0.85, 0.87, 0.9, 0.92, 0.95]
+        self.coverage_threshold = [0, 0, 0, 0, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.8, 0.8, 0.8, 0.8, 0.8]
         self.dCV1 = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         self.dCV2 = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         self.vacStep = 0
@@ -221,7 +230,7 @@ class HeffernanOdeModel16(BaseModel):
                                                          alpha=np.array(duplicate_data([1, 2/3, 1/3, 0], 16)).T,
                                                          beta=np.array(duplicate_data([0.04, 0.08, 0.008], 16)),
                                                          c=calculate_A_and_c(0, 1, self.contact_modifiers, self.perturbations_matrices, self.transition_matrices)[1],
-                                                         delta=np.array(duplicate_data([0, 0, 0, 0.0001], 16)).T,
+                                                         delta=np.array(duplicate_data([0, 0, 0, 0.00001], 16)).T,
                                                          epsilon=1-0.559,
                                                          gamma=np.array(duplicate_data([0, 0.2, 0.1, 1/15], 16)).T,
                                                          kappa=np.array(duplicate_data([0, 1/1.5, 1/1.5, 1/1.5], 16)).T,
@@ -230,7 +239,7 @@ class HeffernanOdeModel16(BaseModel):
                                                          p1=np.array(self.p1).T,
                                                          p2=np.array(self.p2).T,
                                                          p3=np.array(self.p3).T,
-                                                         rho=0.8944,
+                                                         rho=0.894,
                                                          sigma=np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]), 
                                                          sigma2=np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]) 
                                                          )
@@ -394,7 +403,8 @@ class HeffernanOdeModel16(BaseModel):
         for i in range(len(_deltaCoverage)):
             if _deltaCoverage[i] == 0:
                 _deltaCoverage[i] = 10e-6 
-        _deltaCoverage[-1] = _deltaCoverage[-2]
+        for i in range(1,14):
+            _deltaCoverage[-i] = _deltaCoverage[-14]
         return _deltaCoverage
 
 
@@ -409,8 +419,8 @@ class HeffernanOdeModel16(BaseModel):
         wcv, Ntot = 0, 0
         for n in range(16):
             Ntot += sum([self.current_state[self._age_groups[n]]['{}'.format(s)] for s in popGrp])
-            if self.whovaccinated[self.vacStep+1][n] == 1:
-                wcv += sum([self.current_state[self._age_groups[n]]['{}'.format(s)] for s in classes])
+            if self.whovaccinated[self.vacStep][n] == 1:
+                wcv += sum([self.current_state[self._age_groups[n]]['{}'.format(y)] for y in classes])
         g = (pi*Ntot/wcv)
         if g>1:
             g=0.999999999
@@ -426,26 +436,28 @@ class HeffernanOdeModel16(BaseModel):
         if self.t > 670:
             return [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         return sigma
-    
+
+
     def politic_decision_module(self):
-        # A CHAQUE EPISODE (TOUS LES 15 JOURS)
+        # A CHAQUE DATE
+        total_I4 = 0
         for f in range(16):
-            total_I4 = sum([self.current_state[self._age_groups[f]]['I4']])
-        if total_I4 > 90000:
+            total_I4 += sum([self.current_state[self._age_groups[f]]['I4']])
+        if total_I4 > 40000:
             if self.t > 531:
                 if self.t < 609:
                    self.newstep = 19 
-            self.k = 0.35
+            self.k = 0.3
             self.newstep = 4
             self.nbrConf += 1
             print(self.t, self.nbrConf)
-        elif total_I4 < 90000:
+        elif total_I4 < 40000:
             if self.t > 531:
                 if self.t < 609:
-                    self.k = 0.8
+                    self.k = 0.6
                     self.newstep = 27
                 elif self.t > 609:
-                    self.k = 0.6
+                    self.k = 0.55
                     self.newstep = 22
             else:
                 self.k = 0.6
@@ -486,11 +498,11 @@ class HeffernanOdeModel16(BaseModel):
             if self.t > 369:
                 sigma = self.compute_sigma()
                 self.current_internal_params['sigma'] = np.array(sigma)
-                self.current_internal_params['sigma2'] = np.array(duplicate_data(1/42, 16))
-                self.k = k_value(self.t)
-                self.politic_decision_module()
-                A_c = calculate_A_and_c(self.newstep, self.k, self.contact_modifiers, self.perturbations_matrices, self.transition_matrices)
-                self.current_internal_params['A'], self.current_internal_params['c'] = np.array(A_c[0]), A_c[1]
+                self.current_internal_params['sigma2'] = np.array(duplicate_data(1/28, 16))
+                # self.k = k_value(self.t)
+                # self.politic_decision_module()
+                # A_c = calculate_A_and_c(self.newstep, self.k, self.contact_modifiers, self.perturbations_matrices, self.transition_matrices)
+                # self.current_internal_params['A'], self.current_internal_params['c'] = np.array(A_c[0]), A_c[1]
                 self.vacStep += 1
             self.step += 1
 
@@ -499,7 +511,7 @@ class HeffernanOdeModel16(BaseModel):
         self._set_current_state(current_state=z[-1].copy())  # save new current state
         self.t += 1
         self.current_state = self.convert_states(self.current_state)
-        print(self.nbrConf)
+        #print(self.nbrConf)
         # format results
         if labelled_states:
             return self._convert_to_labelled_states(np.atleast_2d(z[1:]))
@@ -513,7 +525,7 @@ if __name__ == '__main__':
     labels = ['0-4', '5-9', '10-14', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44', '45-49', '50-54', '55-59', '60-64', '65-69',  '70-74', '75+']
 
     # Run simulation
-    simulation_horizon = 731
+    simulation_horizon = 821
     model_states = []
     for i in range(simulation_horizon):
         model_state = model.run_n_steps()
@@ -521,24 +533,24 @@ if __name__ == '__main__':
     
     # Plot
     time = np.arange(simulation_horizon)
-    #plot_preds(t=time,states=np.array(model_states).transpose()[23], title="Évolution du nombre de cas incident sévères (I$_4$) de COVID-19 avec vaccination")
+    plot_preds(t=time,states=np.array(model_states).transpose()[23], title="Évolution du nombre de cas incident sévères (I$_4$) de COVID-19 avec vaccination")
     # popost = 0
     # for i in range(0, 24):
     #     popost += sum(model_state.transpose()[i])
     # print(popost)
-    jiji = []
-    for i in model_states:
-        tot = 0
-        for j in i:
-            tot += j[23]
-        jiji.append(tot)
-    plt.plot(time, np.array(jiji), label='I$_4$')
-    # plt.plot(np.linspace(142, 527, (516-131)), (np.array(get_incidence())), label='Données SIDEP')
-    plt.axvline(x=370, label='Début de la campagne vaccinale', color='red', linewidth=1, linestyle='--')
-    plt.axvline(x=631, label='Fin de la première dose', linewidth=1, linestyle='--')
-    # plt.axvline(x=527, label='Absence de données réelles', color="green", linewidth=1, linestyle='--')
-    plt.xlabel("Temps (en jours)")
-    plt.ylabel(r'Nombre de personnes hospitalisées')
-    plt.legend()
-    # plt.title("Évolution du nombre de cas incident modérés et sévères (I$_3$ + I$_4$) de COVID-19 avec vaccination")
-    plt.show()
+    # jiji = []
+    # for i in model_states:
+    #     tot = 0
+    #     for j in i:
+    #         tot += j[23]
+    #     jiji.append(tot)
+    # plt.plot(time, np.array(jiji), label='I$_4$')
+    # # plt.plot(np.linspace(142, 527, (516-131)), (np.array(get_incidence())), label='Données SIDEP')
+    # plt.axvline(x=370, label='Début de la campagne vaccinale', color='red', linewidth=1, linestyle='--')
+    # plt.axvline(x=631, label='Fin de la première dose', linewidth=1, linestyle='--')
+    # # plt.axvline(x=527, label='Absence de données réelles', color="green", linewidth=1, linestyle='--')
+    # plt.xlabel("Temps (en jours)")
+    # plt.ylabel(r'Nombre de personnes hospitalisées')
+    # plt.legend()
+    # # plt.title("Évolution du nombre de cas incident modérés et sévères (I$_3$ + I$_4$) de COVID-19 avec vaccination")
+    # plt.show()
