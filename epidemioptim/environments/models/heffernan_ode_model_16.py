@@ -90,7 +90,7 @@ def vaccination_model(y: tuple,
     T = S1 + S2 + S3 + S4 + E21 + E22 + E23 + E31 + E32 + E33 + E41 + E42 + E43 + V11 + V21 + V31 + V41 + V12 + V22 + V32 + V42 + I2 + I3 + I4
 
     # VOC and infectivity calculation
-    Xm = sum(np.multiply(beta))
+    Xm = sum(np.multiply((beta), np.array((I2,I3,I4)).T).T)
     Ym = np.divide(Xm, T)
     infect = np.dot(np.array(c).T, Ym)
 
@@ -230,7 +230,7 @@ class HeffernanOdeModel16(BaseModel):
                                                          alpha=np.array(duplicate_data([1, 2/3, 1/3, 0], 16)).T,
                                                          beta=np.array(duplicate_data([0.04, 0.08, 0.008], 16)),
                                                          c=calculate_A_and_c(0, 1, self.contact_modifiers, self.perturbations_matrices, self.transition_matrices)[1],
-                                                         delta=np.array(duplicate_data([0, 0, 0, 0.00001], 16)).T,
+                                                         delta=np.array(duplicate_data([0, 0, 0, 0.00164], 16)).T,
                                                          epsilon=1-0.559,
                                                          gamma=np.array(duplicate_data([0, 0.2, 0.1, 1/15], 16)).T,
                                                          kappa=np.array(duplicate_data([0, 1/1.5, 1/1.5, 1/1.5], 16)).T,
@@ -443,7 +443,7 @@ class HeffernanOdeModel16(BaseModel):
         total_I4 = 0
         for f in range(16):
             total_I4 += sum([self.current_state[self._age_groups[f]]['I4']])
-        if total_I4 > 40000:
+        if total_I4 > 20000:
             if self.t > 531:
                 if self.t < 609:
                    self.newstep = 19 
@@ -451,7 +451,7 @@ class HeffernanOdeModel16(BaseModel):
             self.newstep = 4
             self.nbrConf += 1
             print(self.t, self.nbrConf)
-        elif total_I4 < 40000:
+        elif total_I4 < 20000:
             if self.t > 531:
                 if self.t < 609:
                     self.k = 0.6
@@ -496,13 +496,13 @@ class HeffernanOdeModel16(BaseModel):
             self.current_internal_params['A'], self.current_internal_params['c'] = np.array(A_c[0]), A_c[1]
             self.current_internal_params['nu'] = nu_value(self.t)
             if self.t > 369:
-                sigma = self.compute_sigma()
-                self.current_internal_params['sigma'] = np.array(sigma)
-                self.current_internal_params['sigma2'] = np.array(duplicate_data(1/28, 16))
-                # self.k = k_value(self.t)
-                # self.politic_decision_module()
-                # A_c = calculate_A_and_c(self.newstep, self.k, self.contact_modifiers, self.perturbations_matrices, self.transition_matrices)
-                # self.current_internal_params['A'], self.current_internal_params['c'] = np.array(A_c[0]), A_c[1]
+                # sigma = self.compute_sigma()
+                # self.current_internal_params['sigma'] = np.array(sigma)
+                # self.current_internal_params['sigma2'] = np.array(duplicate_data(1/28, 16))
+                self.k = k_value(self.t)
+                self.politic_decision_module()
+                A_c = calculate_A_and_c(self.newstep, self.k, self.contact_modifiers, self.perturbations_matrices, self.transition_matrices)
+                self.current_internal_params['A'], self.current_internal_params['c'] = np.array(A_c[0]), A_c[1]
                 self.vacStep += 1
             self.step += 1
 
@@ -533,18 +533,18 @@ if __name__ == '__main__':
     
     # Plot
     time = np.arange(simulation_horizon)
-    plot_preds(t=time,states=np.array(model_states).transpose()[23], title="Évolution du nombre de cas incident sévères (I$_4$) de COVID-19 avec vaccination")
+    # plot_preds(t=time,states=np.array(model_states).transpose()[23], title="Évolution du nombre de cas incident sévères (I$_4$) de COVID-19 avec vaccination")
     # popost = 0
     # for i in range(0, 24):
     #     popost += sum(model_state.transpose()[i])
     # print(popost)
-    # jiji = []
-    # for i in model_states:
-    #     tot = 0
-    #     for j in i:
-    #         tot += j[23]
-    #     jiji.append(tot)
-    # plt.plot(time, np.array(jiji), label='I$_4$')
+    jiji = []
+    for i in model_states:
+        tot = 0
+        for j in i:
+            tot += j[23]
+        jiji.append(tot)
+    plt.plot(time, np.array(jiji), label='I$_4$')
     # # plt.plot(np.linspace(142, 527, (516-131)), (np.array(get_incidence())), label='Données SIDEP')
     # plt.axvline(x=370, label='Début de la campagne vaccinale', color='red', linewidth=1, linestyle='--')
     # plt.axvline(x=631, label='Fin de la première dose', linewidth=1, linestyle='--')
@@ -553,4 +553,4 @@ if __name__ == '__main__':
     # plt.ylabel(r'Nombre de personnes hospitalisées')
     # plt.legend()
     # # plt.title("Évolution du nombre de cas incident modérés et sévères (I$_3$ + I$_4$) de COVID-19 avec vaccination")
-    # plt.show()
+    plt.show()
