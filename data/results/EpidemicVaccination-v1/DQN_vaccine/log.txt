@@ -1,0 +1,9 @@
+---------------
+Episode: 1.00
+	Best score so far: 12222.09
+	Eval score: 12222.09
+	Loss 1: nan
+	Train, Cost 1: 11557.79
+	Train, Aggregated cost: 324.75
+	Eval, g: [], C1: 12222.09 +/- 0.00, Agg: 331.08 +/- 331.08
+	

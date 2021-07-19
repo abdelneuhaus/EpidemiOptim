@@ -8,7 +8,7 @@ from epidemioptim.configs.get_params import get_params
 from epidemioptim.utils import get_logdir, set_seeds
 import argparse
 
-CONFIG =  'dqn_vaccine'
+CONFIG =  'dqn_vaccine_mg'
 
 def train(config, expe_name, trial_id):
     """

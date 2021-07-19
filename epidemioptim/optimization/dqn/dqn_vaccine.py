@@ -94,7 +94,6 @@ class DQN_vaccine(BaseAlgorithm):
         self.dims = dict(s=env.observation_space.shape[0],
                          a=env.action_space.n)
 
-        #
 
         if self.goal_conditioned:
             self.goal_dim = self.env.unwrapped.cost_function.goal_dim

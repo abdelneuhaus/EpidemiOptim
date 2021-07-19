@@ -26,6 +26,8 @@ def get_params(config_id, expe_name=None):
         from epidemioptim.configs.nsga_ii import params
     elif config_id == 'dqn_vaccine':
         from epidemioptim.configs.dqn_vaccine import params
+    elif config_id == 'dqn_vaccine_mg':
+        from epidemioptim.configs.dqn_vaccine_mg import params
     else:
         raise NotImplementedError
     if expe_name:

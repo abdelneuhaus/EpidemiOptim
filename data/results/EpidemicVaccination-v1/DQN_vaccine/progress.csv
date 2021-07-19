@@ -1,0 +1,2 @@
+,Episode,Best score so far,Eval score,"Eval, g: []: mean_agg","Eval, g: []: std_agg","Eval, g: []: mean_C0","Eval, g: []: std_C0",Loss 1,"Train, Cost 1","Train, Aggregated cost"
+0,1,12222.089807361364,12222.089807361364,331.0781154096929,331.0781154096929,12222.089807361364,0.0,,11557.794735647738,324.75067094463566

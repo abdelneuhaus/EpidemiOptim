@@ -450,7 +450,7 @@ class HeffernanOdeModel16(BaseModel):
             self.k = 0.3
             self.newstep = 4
             self.nbrConf += 1
-            print(self.t, self.nbrConf)
+            # print(self.t, self.nbrConf)
         elif total_I4 < 20000:
             if self.t > 531:
                 if self.t < 609:
