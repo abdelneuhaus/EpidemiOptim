@@ -701,35 +701,52 @@ def vaccination_active(path):
     return [x for y in _vaccineFull for x in y]
 
 
+# extract k and nu only once
+K = get_text_file_data(get_repo_path() + '/data/jane_model_data/kval16.txt')
+kval = [x for y in K for x in y]
+times = [0,71,73,76,91,121,152,153,173,182,185,201,213,239,244,274,290,295,303,305,335,349,353,366,369,370,377,381,384,391,397,398,
+    402,404,405,409,412,418,419,425,426,431,433,440,447,454,456,459,461,465,468,472,475,481,482,486,488,489,494,496,497,501,503,510,
+    517,524,531,546,552,578,609,639,661,670,677,717,731,762,768,775,782,789,790,796,821]
+DICT_K = dict(zip(times, kval))
+_vocpercentNU = pd.read_excel(get_repo_path() + '/data/jane_model_data/ScenarioPlanFranceOne16.xlsx', sheet_name='VOC France', usecols=(3, 3)).values.tolist()
+DICT_NU = dict()
+vocInfect = 0.6
+vocpercent = [x for y in _vocpercentNU for x in y if str(x) != 'nan']
+for t in range(3000):
+    inds = np.atleast_1d(np.argwhere(np.array(times) <= t).squeeze())
+    DICT_NU[t] = vocInfect * vocpercent[inds[-1]] / 100
+
 def k_value(t, path=get_repo_path() + '/data/jane_model_data/kval16.txt'):
     """
     Compare the current timestep t to a list of int and return the appropriate kval
     """
-    k = get_text_file_data(path)
-    kval = [x for y in k for x in y]
-    time = [0,71,73,76,91,121,152,153,173,182,185,201,213,239,244,274,290,295,303,305,335,349,353,366,369,370,377,381,384,391,397,398,
-    402,404,405,409,412,418,419,425,426,431,433,440,447,454,456,459,461,465,468,472,475,481,482,486,488,489,494,496,497,501,503,510,
-    517,524,531,546,552,578,609,639,661,670,677,717,731,762,768,775,782,789,790,796,821]
-    for i in range(0, len(time)):
-        if t == time[i]:
-            return kval[i]
+    return DICT_K[t]
+    # k = get_text_file_data(path)
+    # kval = [x for y in k for x in y]
+    # time = [0,71,73,76,91,121,152,153,173,182,185,201,213,239,244,274,290,295,303,305,335,349,353,366,369,370,377,381,384,391,397,398,
+    # 402,404,405,409,412,418,419,425,426,431,433,440,447,454,456,459,461,465,468,472,475,481,482,486,488,489,494,496,497,501,503,510,
+    # 517,524,531,546,552,578,609,639,661,670,677,717,731,762,768,775,782,789,790,796,821]
+    # for i in range(0, len(time)):
+    #     if t == time[i]:
+    #         return kval[i]
 
 
 def nu_value(t, path=get_repo_path() + '/data/jane_model_data/ScenarioPlanFranceOne16.xlsx'):
     """
     Variants of Concern infections
     """
-    vocInfect = 0.6
-    time = [0,71,73,76,91,121,152,153,173,182,185,201,213,239,244,274,290,295,303,305,335,349,353,366,369,370,377,381,384,391,397,398,
-    402,404,405,409,412,418,419,425,426,431,433,440,447,454,456,459,461,465,468,472,475,481,482,486,488,489,494,496,497,501,503,510,
-    517,524,531,546,552,578,609,639,661,670,677,717,731,762,768,775,782,789,790,796,821]
-    _vocpercent = pd.read_excel(path, sheet_name='VOC France', usecols=(3,3)).values.tolist()
-    vocpercent = [x for y in _vocpercent for x in y if str(x) != 'nan']
-    for i in range(0, len(time)):
-        if int(t) == time[i]:
-            return vocInfect*vocpercent[i]/100
-        elif int(t) > time[i] and int(t) < time[i+1]:
-            return vocInfect*vocpercent[i]/100
+    return DICT_NU[t]
+    # vocInfect = 0.6
+    # time = [0,71,73,76,91,121,152,153,173,182,185,201,213,239,244,274,290,295,303,305,335,349,353,366,369,370,377,381,384,391,397,398,
+    # 402,404,405,409,412,418,419,425,426,431,433,440,447,454,456,459,461,465,468,472,475,481,482,486,488,489,494,496,497,501,503,510,
+    # 517,524,531,546,552,578,609,639,661,670,677,717,731,762,768,775,782,789,790,796,821]
+    # _vocpercent = pd.read_excel(path, sheet_name='VOC France', usecols=(3,3)).values.tolist()
+    # vocpercent = [x for y in _vocpercent for x in y if str(x) != 'nan']
+    # for i in range(0, len(time)):
+    #     if int(t) == time[i]:
+    #         return vocInfect*vocpercent[i]/100
+    #     elif int(t) > time[i] and int(t) < time[i+1]:
+    #         return vocInfect*vocpercent[i]/100
 
 
 def get_target_population(path = get_repo_path() + '/data/jane_model_data/ScenarioPlanFranceOne16.xlsx'):
