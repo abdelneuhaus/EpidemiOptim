@@ -138,7 +138,7 @@ class EpidemicVaccinationMultiGroups(BaseEnv):
             model_state = self.model.run_n_steps()
             model_states += model_state.tolist()
             self.model_state = self.model._get_current_state()
-        return self.model.current_state, self.model.current_internal_params
+        return self.model.current_state, self.model.current_internal_params, model_states
     
 
     def who_can_vaccinate_3_groups(self):
@@ -444,9 +444,8 @@ if __name__ == '__main__':
                     model=model,
                     simulation_horizon=simulation_horizon)
     env.reset()
-
-    model_states = []
-    env.model.current_state, env.model.current_internal_params = env.initialize_model_for_vaccine()
+    model_states=[]
+    env.model.current_state, env.model.current_internal_params, model_states = env.initialize_model_for_vaccine()
     # Actions
     # actions = ([0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1], 
     #            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1], 
@@ -473,30 +472,30 @@ if __name__ == '__main__':
     #            [0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1], 
     #            [0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1])
 
-    actions = ([0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1], 
-               [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1], 
-               [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1], 
-               [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1], 
-               [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1], 
-               [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1], 
-               [0,1,1,0,0,1,1,1,1,1,0,0,1,1,1,1], 
-               [0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1], 
-               [0,1,1,0,0,1,1,1,1,1,0,0,1,1,1,1], 
-               [0,1,1,0,0,1,1,1,1,1,0,0,1,1,1,1], 
-               [0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1], 
-               [0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1], 
-               [1,1,1,0,1,1,1,1,1,1,0,0,1,1,1,1], 
-               [0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1], 
-               [0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1], 
-               [0,1,1,0,1,1,1,1,1,1,0,0,1,1,1,1], 
-               [1,1,1,0,1,1,1,1,1,1,0,0,1,1,1,1], 
-               [0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1], 
-               [0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1], 
-               [0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1], 
-               [0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1], 
-               [1,1,1,0,1,1,1,1,1,1,0,0,1,1,1,1], 
-               [1,1,1,0,1,1,1,1,1,1,0,0,1,1,1,1], 
-               [0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1])
+    actions = ( [1, 0, 0, 0, 1, 1, 0, 0, 1, 1, 1, 0, 0, 1, 0, 0], 
+                [0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 0], 
+                [0, 0, 1, 0, 0, 0, 1, 1, 1, 0, 0, 1, 0, 0, 1, 0], 
+                [0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0, 1, 0, 1], 
+                [0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 0, 0, 0], 
+                [1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 1, 0], 
+                [1, 0, 1, 0, 1, 1, 0, 0, 1, 1, 1, 0, 1, 0, 0, 1], 
+                [0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 0, 1],  
+                [0, 1, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 1, 1], 
+                [0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0], 
+                [0, 0, 1, 0, 0, 0, 1, 1, 1, 0, 0, 1, 0, 0, 1, 0], 
+                [1, 0, 0, 1, 0, 0, 1, 0, 1, 1, 0, 0, 0, 1, 0, 0], 
+                [0, 0, 0, 1, 0, 1, 1, 0, 0, 0, 1, 0, 0, 1, 0, 1], 
+                [0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1], 
+                [1, 0, 0, 0, 0, 1, 0, 1, 1, 1, 1, 0, 0, 1, 1, 0], 
+                [1, 0, 0, 1, 0, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0],  
+                [0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1],  
+                [0, 0, 0, 1, 0, 1, 1, 0, 1, 1, 1, 0, 0, 1, 0, 1],  
+                [0, 0, 0, 0, 1, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0], 
+                [0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 0, 0, 0],  
+                [0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 1, 1], 
+                [1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 1], 
+                [0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0], 
+                [0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0, 0, 1, 1, 0])
 
     t = 0
     r = 0
@@ -514,29 +513,39 @@ if __name__ == '__main__':
     # print(stats['history']['aggregated_costs'])
     # print("")
     # print(stats['history']['costs'])
-    plot_preds(t=np.arange(732-371),states=np.array(stats['history']['model_states']).transpose()[23], title="Évolution de la proportion d'individus vaccinés par classe d'âge avec une dose de vaccin (en %)")
+    #plot_preds(t=np.arange(732-371),states=np.array(stats['history']['model_states']).transpose()[23], title="Évolution de la proportion d'individus vaccinés par classe d'âge avec une dose de vaccin (en %)")
     plt.plot(np.arange(simulation_horizon),np.array(stats['history']['deaths']))
-    plt.axvline(x=0, label='Début de la campagne vaccinale', color='red', linewidth=1, linestyle='--')
-    plt.axvline(x=631-370, label='Fin de la première dose', linewidth=1, linestyle='--')
-    plt.legend()
+    #plt.axvline(x=0, label='Début de la campagne vaccinale', color='red', linewidth=1, linestyle='--')
+    #plt.axvline(x=631-370, label='Fin de la première dose', linewidth=1, linestyle='--')
+    #plt.legend()
     #plt.title("Non-cumulative cost function (number of death each month)")
-    plt.show()
+   # plt.show()
 
-
+    # env.model.reset()
+    # model_states = []
+    # for i in range(simulation_horizon):
+    #     model_state = model.run_n_steps()
+    #     model_states += model_state.tolist()
+    # print(np.array(model_states)[0])
+    
     # jiji = []
-    # for i in np.concatenate((np.array(model_states), np.array(stats['history']['model_states']))):
-    #     tot = 0
+    # jaja = []
+    # for i in np.array(stats['history']['model_states']):
+    #     tot, tat = 0, 0
     #     for j in i:
-    #         tot += j[32]
-    #     jiji.append(tot/16)
+    #         tot += j[23]
+    #         tat += j[23]+j[22]*0.5
+    #     jiji.append(tot)
+    #     jaja.append(tat)
     # # #print(sum(stats['history']['deaths'])/len(stats['history']['deaths'])*12)
-    # plt.plot(time, jiji, label='I$_3 + $I$_4$')
-    # plt.plot(np.linspace(142, 527, (516-131)), (np.array(get_incidence())), label='Données SIDEP')
-    # plt.axvline(x=370, label='Début de la campagne vaccinale', color='red', linewidth=1, linestyle='--')
-    # plt.axvline(x=631, label='Fin de la première dose', linewidth=1, linestyle='--')
-    # plt.axvline(x=527, label='Absence de données réelles', color="green", linewidth=1, linestyle='--')
-    # plt.xlabel("Temps (en jours)")
-    # plt.ylabel(r'Nombre de personnes hospitalisées')
-    # plt.legend()
+    # plt.plot(time, jaja, label='I$_3$*0.5 + I$_4$', color='red')
+    # plt.plot(time, jiji, label='I$_4$')
+    # plt.plot(np.linspace(0, 200, (571-371)), (np.array(get_incidence())), label='Données SIDEP')
+    plt.axvline(x=398-371, label='Lockdown 1', color='green', linewidth=1, linestyle='--')
+    plt.axvline(x=468-371, label='Lockdown 2', color="black", linewidth=1, linestyle='--')
+    plt.axvline(x=546-371, label='Lockdown 3', color="purple", linewidth=1, linestyle='--')
+    # # plt.xlabel("Temps (en jours)")
+    # # plt.ylabel(r'Nombre de personnes hospitalisées')
+    plt.legend()
     # plt.title("Évolution du nombre de cas incident modérés et sévères (I$_3$ + I$_4$) de COVID-19 avec vaccination (50 scénarios)")
-    # plt.show()
+    plt.show()

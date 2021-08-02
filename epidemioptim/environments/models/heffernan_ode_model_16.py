@@ -230,7 +230,7 @@ class HeffernanOdeModel16(BaseModel):
                                                          alpha=np.array(duplicate_data([1, 2/3, 1/3, 0], 16)).T,
                                                          beta=np.array(duplicate_data([0.04, 0.08, 0.008], 16)),
                                                          c=calculate_A_and_c(0, 1, self.contact_modifiers, self.perturbations_matrices, self.transition_matrices)[1],
-                                                         delta=np.array(duplicate_data([0, 0, 0, 0.00164], 16)).T,
+                                                         delta=np.array(duplicate_data([0, 0, 0, 0.0186], 16)).T,
                                                          epsilon=1-0.559,
                                                          gamma=np.array(duplicate_data([0, 0.2, 0.1, 1/15], 16)).T,
                                                          kappa=np.array(duplicate_data([0, 1/1.5, 1/1.5, 1/1.5], 16)).T,
@@ -442,16 +442,16 @@ class HeffernanOdeModel16(BaseModel):
         # A CHAQUE DATE
         total_I4 = 0
         for f in range(16):
-            total_I4 += sum([self.current_state[self._age_groups[f]]['I4']])
-        if total_I4 > 20000:
+            total_I4 += (sum([self.current_state[self._age_groups[f]]['I3']])*0.5 + sum([self.current_state[self._age_groups[f]]['I4']]))
+        if total_I4 > 37000:
             if self.t > 531:
                 if self.t < 609:
                    self.newstep = 19 
             self.k = 0.3
             self.newstep = 4
             self.nbrConf += 1
-            # print(self.t, self.nbrConf)
-        elif total_I4 < 20000:
+            #print(self.t, self.nbrConf)
+        elif total_I4 < 37000:
             if self.t > 531:
                 if self.t < 609:
                     self.k = 0.6
@@ -498,7 +498,7 @@ class HeffernanOdeModel16(BaseModel):
             if self.t > 369:
                 # sigma = self.compute_sigma()
                 # self.current_internal_params['sigma'] = np.array(sigma)
-                # self.current_internal_params['sigma2'] = np.array(duplicate_data(1/28, 16))
+                self.current_internal_params['sigma2'] = np.array(duplicate_data(1/28, 16))
                 self.k = k_value(self.t)
                 self.politic_decision_module()
                 A_c = calculate_A_and_c(self.newstep, self.k, self.contact_modifiers, self.perturbations_matrices, self.transition_matrices)
@@ -538,19 +538,24 @@ if __name__ == '__main__':
     # for i in range(0, 24):
     #     popost += sum(model_state.transpose()[i])
     # print(popost)
-    jiji = []
-    for i in model_states:
-        tot = 0
-        for j in i:
-            tot += j[23]
-        jiji.append(tot)
-    plt.plot(time, np.array(jiji), label='I$_4$')
-    # # plt.plot(np.linspace(142, 527, (516-131)), (np.array(get_incidence())), label='Données SIDEP')
-    # plt.axvline(x=370, label='Début de la campagne vaccinale', color='red', linewidth=1, linestyle='--')
-    # plt.axvline(x=631, label='Fin de la première dose', linewidth=1, linestyle='--')
-    # # plt.axvline(x=527, label='Absence de données réelles', color="green", linewidth=1, linestyle='--')
-    # plt.xlabel("Temps (en jours)")
-    # plt.ylabel(r'Nombre de personnes hospitalisées')
+    # jiji = []
+    # jaja = []
+    # for i in model_states:
+    #     tot = 0
+    #     tat = 0
+    #     for j in i:
+    #         tat += j[23]
+    #         tot += j[22]*0.5 + j[23]
+    #     jiji.append(tot)
+    #     jaja.append(tat)
+    # plt.plot(time, np.array(jiji), label='I$_4$ + 0.5*I$_3$')
+    # plt.plot(time, np.array(jaja), label='I$_4$', color='red')
+    # plt.plot(np.linspace(142, 579, (579-142)), (np.array(get_incidence())), label='Données SIDEP')
+    # plt.axvline(x=370, label='Beginning of vaccination campaign', color='red', linewidth=1, linestyle='--')
+    # # plt.axvline(x=631, label='Fin de la première dose', linewidth=1, linestyle='--')
+    # plt.axvline(x=579, label='July 26th 2021', color="green", linewidth=1, linestyle='--')
+    # # plt.xlabel("Temps (en jours)")
+    # # plt.ylabel(r'Nombre de personnes hospitalisées')
     # plt.legend()
-    # # plt.title("Évolution du nombre de cas incident modérés et sévères (I$_3$ + I$_4$) de COVID-19 avec vaccination")
-    plt.show()
+    # # # plt.title("Évolution du nombre de cas incident modérés et sévères (I$_3$ + I$_4$) de COVID-19 avec vaccination")
+    # plt.show()

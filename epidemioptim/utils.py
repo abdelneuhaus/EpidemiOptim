@@ -716,6 +716,7 @@ for t in range(3000):
     inds = np.atleast_1d(np.argwhere(np.array(times) <= t).squeeze())
     DICT_NU[t] = vocInfect * vocpercent[inds[-1]] / 100
 
+
 def k_value(t, path=get_repo_path() + '/data/jane_model_data/kval16.txt'):
     """
     Compare the current timestep t to a list of int and return the appropriate kval
@@ -872,7 +873,7 @@ def setup_for_replay(folder, seed=np.random.randint(1e6), deterministic_model=Fa
     # if params['algo_id'] == 'NGSA':
     #     algorithm.load_model(folder + 'res_eval.pk')
     # else:
-    algorithm.load_model(folder + 'models/policy_14.cp')
+    algorithm.load_model(folder + 'models/best_model.cp')
 
     return algorithm, cost_function, env, params
 
