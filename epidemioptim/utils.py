@@ -606,7 +606,6 @@ def get_perturbations_matrices(path):
 def get_contact_modifiers(path):
     modifier = pd.read_excel(path, sheet_name='contactModifiersFull')
     E1 = modifier.iloc[2:87,2:5].values.tolist()
-    #E1 = modifier.iloc[2:76,2:5].values.tolist()
     E2 = modifier.iloc[2:76,6:9].values.tolist()
     E3 = modifier.iloc[2:76,10:13].values.tolist()
     E4 = modifier.iloc[2:76,14:17].values.tolist()
@@ -751,6 +750,9 @@ def nu_value(t, path=get_repo_path() + '/data/jane_model_data/ScenarioPlanFrance
 
 
 def get_target_population(path = get_repo_path() + '/data/jane_model_data/ScenarioPlanFranceOne16.xlsx'):
+    """
+    Get the vaccination politic (which group to vaccinate at each change in mitigation) 
+    """
     _data = pd.read_excel(path, sheet_name='targetPopulation', skiprows=25, usecols=(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16)).fillna(0).values.tolist()
     val = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
     for i in range(len(val)):
@@ -761,12 +763,11 @@ def get_target_population(path = get_repo_path() + '/data/jane_model_data/Scenar
     return np.array(_data)
 
 
-def get_MATLAB_res(path = get_repo_path() + '/data/jane_model_data/ScenarioPlanFranceOne16.xlsx'):
-    _data = pd.read_excel(path, sheet_name='I4 sim', skiprows=None, usecols=(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16)).values.tolist()
-    return np.array(_data).transpose()
-
 
 def mitigation_time(step_list):
+    """
+    Compute mitigation duration for each mitigation change
+    """
     breaks = []
     for i in range(len(step_list)-1):
         breaks.append(step_list[i+1]-step_list[i])
@@ -877,19 +878,20 @@ def setup_for_replay(folder, seed=np.random.randint(1e6), deterministic_model=Fa
 
     return algorithm, cost_function, env, params
 
-def get_incidence():
-    PATH_TO_DATA = get_repo_path() + '/data/jane_model_data/inci.csv'
-    data = pd.read_csv(PATH_TO_DATA, delimiter=";")
-    true_data = pd.DataFrame(data['jour'])
-    true_data['T']=data['P']
-    week_grouped = true_data.groupby(['jour'])['T'].sum()/2
+# Compute the real SIDEP incidence from a CSV file
+# def get_incidence():
+#     PATH_TO_DATA = get_repo_path() + '/data/jane_model_data/inci.csv'
+#     data = pd.read_csv(PATH_TO_DATA, delimiter=";")
+#     true_data = pd.DataFrame(data['jour'])
+#     true_data['T']=data['P']
+#     week_grouped = true_data.groupby(['jour'])['T'].sum()/2
 
-    data = week_grouped.values.tolist()
-    #pre = np.zeros(132).tolist()
-    #post = np.zeros(214).tolist()
-    #pre.extend(data)
-    #pre.extend(post)
-    yhat = scipy.signal.savgol_filter(data, 53, 3)
-    # for i in range(455, 731):
-    #     yhat[i] = 0
-    return yhat
+#     data = week_grouped.values.tolist()
+#     #pre = np.zeros(132).tolist()
+#     #post = np.zeros(214).tolist()
+#     #pre.extend(data)
+#     #pre.extend(post)
+#     yhat = scipy.signal.savgol_filter(data, 53, 3)
+#     # for i in range(455, 731):
+#     #     yhat[i] = 0
+#     return yhat
