@@ -116,6 +116,9 @@ class EpidemicVaccinationMultiGroups(BaseEnv):
 
 
     def _compute_delta_coverage(self):
+        """
+        Compute the vaccination coverage for each time period regarding Excel file
+        """
         maxcoverage = [x*100 for x in self.model._vaccination_coverage]
         _deltaCoverage = list(range(len(maxcoverage)))
         _deltaCoverage[0] = maxcoverage[0]
@@ -132,6 +135,9 @@ class EpidemicVaccinationMultiGroups(BaseEnv):
     
 
     def initialize_model_for_vaccine(self):
+        """
+        Simulate the epidemic until 5th January, 2021 (beginning of the French vaccination campaign)
+        """
         simulation_horizon = 371
         model_states = []
         for i in range(simulation_horizon):
@@ -142,6 +148,9 @@ class EpidemicVaccinationMultiGroups(BaseEnv):
     
 
     def who_can_vaccinate_3_groups(self):
+        """
+        Compute each 15 days if a group is eligible to the vaccination
+        """
         vaccination_program = []
         data = self.model.whovaccinated
         for i in data:
@@ -156,6 +165,9 @@ class EpidemicVaccinationMultiGroups(BaseEnv):
 
 
     def compute_sigma_with_action(self, action):
+        """
+        Compute the vaccination rate (same as in the model)
+        """
         mwl = self.model.mitigation_windows[self.model.step-1]
         lowVP = 1
         pi = lowVP*(self.model.vaccination_coverage[self.model.vacStep]/100)
