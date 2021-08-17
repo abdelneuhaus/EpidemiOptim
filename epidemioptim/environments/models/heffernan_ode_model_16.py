@@ -230,7 +230,22 @@ class HeffernanOdeModel16(BaseModel):
                                                          alpha=np.array(duplicate_data([1, 2/3, 1/3, 0], 16)).T,
                                                          beta=np.array(duplicate_data([0.04, 0.08, 0.008], 16)),
                                                          c=calculate_A_and_c(0, 1, self.contact_modifiers, self.perturbations_matrices, self.transition_matrices)[1],
-                                                         delta=np.array(duplicate_data([0, 0, 0, 0.0186], 16)).T,
+                                                         delta=np.array([[0.0, 0.0, 0.0, 0.00001],
+                                                                        [0.0, 0.0, 0.0, 0.00001],
+                                                                        [0.0, 0.0, 0.0, 0.00001],
+                                                                        [0.0, 0.0, 0.0, 0.00001],
+                                                                        [0.0, 0.0, 0.0, 0.00005],
+                                                                        [0.0, 0.0, 0.0, 0.00005],
+                                                                        [0.0, 0.0, 0.0, 0.0002],
+                                                                        [0.0, 0.0, 0.0, 0.0002],
+                                                                        [0.0, 0.0, 0.0, 0.0005],
+                                                                        [0.0, 0.0, 0.0, 0.0005],
+                                                                        [0.0, 0.0, 0.0, 0.002],
+                                                                        [0.0, 0.0, 0.0, 0.002],
+                                                                        [0.0, 0.0, 0.0, 0.007],
+                                                                        [0.0, 0.0, 0.0, 0.007],
+                                                                        [0.0, 0.0, 0.0, 0.019],
+                                                                        [0.0, 0.0, 0.0, 0.083]]).T,
                                                          epsilon=1-0.559,
                                                          gamma=np.array(duplicate_data([0, 0.2, 0.1, 1/15], 16)).T,
                                                          kappa=np.array(duplicate_data([0, 1/1.5, 1/1.5, 1/1.5], 16)).T,
@@ -392,6 +407,9 @@ class HeffernanOdeModel16(BaseModel):
 
 
     def _compute_delta_coverage(self):
+        """
+        Compute the goal coverage for each month regarding the Excel sheet
+        """
         maxcoverage = [x*100 for x in self._vaccination_coverage]
         _deltaCoverage = list(range(len(maxcoverage)))
         _deltaCoverage[0] = maxcoverage[0]
@@ -409,6 +427,9 @@ class HeffernanOdeModel16(BaseModel):
 
 
     def compute_sigma(self):
+        """
+        Computes sigma, the vaccination rate, regarding for each group if they are eligible to vaccination during a time period
+        """
         mwl = self.mitigation_windows[self.step]
         lowVP = 1
         pi = lowVP*(self.vaccination_coverage[self.vacStep]/100)
@@ -439,6 +460,14 @@ class HeffernanOdeModel16(BaseModel):
 
 
     def politic_decision_module(self):
+        """
+        Change contact matrices and k values regarding the number of cases (I4 + half of I3)
+        4 scenarios:
+            - no lockdown, holiday
+            - no holiday, lockdown
+            - holiday, lockdown
+            - no holiday, no lockdown
+        """
         # A CHAQUE DATE
         total_I4 = 0
         for f in range(16):
@@ -450,7 +479,7 @@ class HeffernanOdeModel16(BaseModel):
             self.k = 0.3
             self.newstep = 4
             self.nbrConf += 1
-            #print(self.t, self.nbrConf)
+            #print(self.t, self.nbrConf)    # print the number of lockdowns
         elif total_I4 < 37000:
             if self.t > 531:
                 if self.t < 609:
@@ -488,6 +517,7 @@ class HeffernanOdeModel16(BaseModel):
         if current_state is None:
             current_state = np.array(self._get_current_state())
         for f in range(16):
+            # Update the number of people vaccinated with 1 or 2 doses
             self.dCV1[f] = sum([self.current_state[self._age_groups[f]]['{}'.format(s)] for s in ['CV11', 'CV21', 'CV31', 'CV41']])
             self.dCV2[f] = sum([self.current_state[self._age_groups[f]]['{}'.format(s)] for s in ['CV12', 'CV22', 'CV32', 'CV42']])
         if(self.t == self.step_list[self.step]):
@@ -496,13 +526,17 @@ class HeffernanOdeModel16(BaseModel):
             self.current_internal_params['A'], self.current_internal_params['c'] = np.array(A_c[0]), A_c[1]
             self.current_internal_params['nu'] = nu_value(self.t)
             if self.t > 369:
+                # To uncomment if we want to run the initial model
                 # sigma = self.compute_sigma()
                 # self.current_internal_params['sigma'] = np.array(sigma)
-                self.current_internal_params['sigma2'] = np.array(duplicate_data(1/28, 16))
+                self.current_internal_params['sigma2'] = np.array(duplicate_data(1/42, 16))
                 self.k = k_value(self.t)
+                ##### TO COMMENT ####
+                # if we want to run the initial model
                 self.politic_decision_module()
                 A_c = calculate_A_and_c(self.newstep, self.k, self.contact_modifiers, self.perturbations_matrices, self.transition_matrices)
                 self.current_internal_params['A'], self.current_internal_params['c'] = np.array(A_c[0]), A_c[1]
+                ##### END #####
                 self.vacStep += 1
             self.step += 1
 
@@ -533,29 +567,26 @@ if __name__ == '__main__':
     
     # Plot
     time = np.arange(simulation_horizon)
-    # plot_preds(t=time,states=np.array(model_states).transpose()[23], title="Évolution du nombre de cas incident sévères (I$_4$) de COVID-19 avec vaccination")
-    # popost = 0
-    # for i in range(0, 24):
-    #     popost += sum(model_state.transpose()[i])
-    # print(popost)
-    # jiji = []
-    # jaja = []
-    # for i in model_states:
-    #     tot = 0
-    #     tat = 0
-    #     for j in i:
-    #         tat += j[23]
-    #         tot += j[22]*0.5 + j[23]
-    #     jiji.append(tot)
-    #     jaja.append(tat)
-    # plt.plot(time, np.array(jiji), label='I$_4$ + 0.5*I$_3$')
-    # plt.plot(time, np.array(jaja), label='I$_4$', color='red')
+    plot_preds(t=time,states=np.array(model_states).transpose()[23], title="Évolution du nombre de cas incident sévères (I$_4$) de COVID-19 avec vaccination")
+    
+    # Plot hospitalizations (I4) and cases (I4 + half of I3)
+    i4tot = []
+    castot = []
+    for i in model_states:
+        tot = 0
+        tat = 0
+        for j in i:
+            tat += j[23]
+            tot += j[22]*0.5 + j[23]
+        i4tot.append(tot)
+        castot.append(tat)
+    plt.plot(time, np.array(i4tot), label='I$_4$ + 0.5*I$_3$')
+    plt.plot(time, np.array(castot), label='I$_4$', color='red')
     # plt.plot(np.linspace(142, 579, (579-142)), (np.array(get_incidence())), label='Données SIDEP')
-    # plt.axvline(x=370, label='Beginning of vaccination campaign', color='red', linewidth=1, linestyle='--')
-    # # plt.axvline(x=631, label='Fin de la première dose', linewidth=1, linestyle='--')
-    # plt.axvline(x=579, label='July 26th 2021', color="green", linewidth=1, linestyle='--')
-    # # plt.xlabel("Temps (en jours)")
-    # # plt.ylabel(r'Nombre de personnes hospitalisées')
+    plt.axvline(x=370, label='Beginning of vaccination campaign', color='red', linewidth=1, linestyle='--')
+    plt.axvline(x=631, label='Fin de la première dose', linewidth=1, linestyle='--')
+    # plt.xlabel("Temps (en jours)")
+    # plt.ylabel(r'Nombre de personnes hospitalisées')
     # plt.legend()
-    # # # plt.title("Évolution du nombre de cas incident modérés et sévères (I$_3$ + I$_4$) de COVID-19 avec vaccination")
-    # plt.show()
+    # plt.title("Évolution du nombre de cas incident modérés et sévères (I$_3$ + I$_4$) de COVID-19 avec vaccination")
+    plt.show()
