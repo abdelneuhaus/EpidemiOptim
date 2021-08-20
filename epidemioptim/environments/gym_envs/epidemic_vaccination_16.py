@@ -16,8 +16,7 @@ class EpidemicVaccinationMultiGroups(BaseEnv):
                  seed=np.random.randint(1e6)
                  ):
         """
-        EpidemicDiscrete environment is based on the Epidemiological SEIRAH model from Prague et al., 2020 and on a bi-objective
-        cost function (death toll and gdp recess).
+        EpidemicVaccination environment is based on the derivied Epidemiological SEIVS model from Heffernan et al., 2021.
 
         Parameters
         ----------
@@ -519,17 +518,17 @@ if __name__ == '__main__':
     for i in np.array(stats['history']['model_states']):
         tot, tat = 0, 0
         for j in i:
-            tot += j[23]
-            tat += j[23]+j[22]*0.5
+            tot += j[22]*0.5+j[23]
+            tat += j[23]
         i4tot.append(tot)
         castot.append(tat)
-    plt.plot(time, castot, label='I$_3$*0.5 + I$_4$', color='red')
+    plt.plot(time, castot, label='I$_4$ + 0.5*I$_3$', color='red')
     plt.plot(time, i4tot, label='I$_4$')
     # plt.plot(np.linspace(0, 200, (571-371)), (np.array(get_incidence())), label='Données SIDEP')
-    plt.axvline(x=398-371, label='Lockdown 1', color='green', linewidth=1, linestyle='--')
-    plt.axvline(x=546-371, label='Lockdown 2', color="purple", linewidth=1, linestyle='--')
-    # plt.xlabel("Temps (en jours)")
-    # plt.ylabel(r'Nombre de personnes hospitalisées')
+    # plt.axvline(x=398-371, label='Lockdown 1', color='green', linewidth=1, linestyle='--')
+    # plt.axvline(x=546-371, label='Lockdown 2', color="purple", linewidth=1, linestyle='--')
+    #plt.xlabel("Time (days)")
+   #plt.ylabel(r'People vaccinated')
     plt.legend()
     # plt.title("Évolution du nombre de cas incident modérés et sévères (I$_3$ + I$_4$) de COVID-19 avec vaccination (50 scénarios)")
     plt.show()

@@ -15,8 +15,7 @@ class EpidemicVaccination(BaseEnv):
                  seed=np.random.randint(1e6)
                  ):
         """
-        EpidemicDiscrete environment is based on the Epidemiological SEIRAH model from Prague et al., 2020 and on a bi-objective
-        cost function (death toll and gdp recess).
+        EpidemicVaccination environment is based on the derivied Epidemiological SEIVS model from Heffernan et al., 2021.
 
         Parameters
         ----------
@@ -585,7 +584,6 @@ if __name__ == '__main__':
         jiji.append(tot/16)
     # #print(sum(stats['history']['deaths'])/len(stats['history']['deaths'])*12)
     plt.plot(time, jiji, label='I$_3 + $I$_4$')
-    plt.plot(np.linspace(142, 527, (516-131)), (np.array(get_incidence())), label='Données SIDEP')
     plt.axvline(x=370, label='Début de la campagne vaccinale', color='red', linewidth=1, linestyle='--')
     plt.axvline(x=631, label='Fin de la première dose', linewidth=1, linestyle='--')
     plt.axvline(x=527, label='Absence de données réelles', color="green", linewidth=1, linestyle='--')
